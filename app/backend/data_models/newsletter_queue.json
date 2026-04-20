@@ -1,0 +1,65 @@
+{
+    "title": "newsletter_queue",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "subscriber_id": {
+            "type": "integer",
+            "description": "FK to subscribers"
+        },
+        "subject": {
+            "type": "string",
+            "description": "Email subject line"
+        },
+        "template_key": {
+            "type": "string",
+            "description": "Template used"
+        },
+        "article_ids": {
+            "type": "string",
+            "description": "Comma-separated article IDs included"
+        },
+        "scheduled_date": {
+            "type": "string",
+            "description": "Scheduled send date YYYY-MM-DD"
+        },
+        "status": {
+            "type": "string",
+            "description": "Status: pending, sent, failed, skipped_duplicate, cancelled"
+        },
+        "sent_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When actually sent"
+        },
+        "opened_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When opened (tracking)"
+        },
+        "clicked_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When clicked (tracking)"
+        },
+        "ab_test_id": {
+            "type": "integer",
+            "description": "FK to ab test if part of a test"
+        },
+        "ab_variant": {
+            "type": "string",
+            "description": "A or B variant"
+        },
+        "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created timestamp"
+        }
+    },
+    "required": [
+        "id"
+    ]
+}

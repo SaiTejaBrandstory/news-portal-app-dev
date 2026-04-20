@@ -1,0 +1,112 @@
+[
+    {
+        "email": "sarah.chen@example.com",
+        "first_name": "Sarah",
+        "last_name": "Chen",
+        "status": "active",
+        "email_verified": true,
+        "timezone": "America/New_York",
+        "preferred_send_time": "08:00",
+        "created_at": "2026-03-01 10:00:00",
+        "updated_at": "2026-04-10 10:00:00"
+    },
+    {
+        "email": "james.wilson@example.com",
+        "first_name": "James",
+        "last_name": "Wilson",
+        "status": "active",
+        "email_verified": true,
+        "timezone": "America/Chicago",
+        "preferred_send_time": "07:00",
+        "created_at": "2026-03-05 14:00:00",
+        "updated_at": "2026-04-10 10:00:00"
+    },
+    {
+        "email": "maria.garcia@example.com",
+        "first_name": "Maria",
+        "last_name": "Garcia",
+        "status": "active",
+        "email_verified": true,
+        "timezone": "America/Los_Angeles",
+        "preferred_send_time": "09:00",
+        "created_at": "2026-03-10 09:00:00",
+        "updated_at": "2026-04-10 10:00:00"
+    },
+    {
+        "email": "alex.kumar@example.com",
+        "first_name": "Alex",
+        "last_name": "Kumar",
+        "status": "active",
+        "email_verified": true,
+        "timezone": "Europe/London",
+        "preferred_send_time": "08:00",
+        "created_at": "2026-03-15 16:00:00",
+        "updated_at": "2026-04-10 10:00:00"
+    },
+    {
+        "email": "emma.jones@example.com",
+        "first_name": "Emma",
+        "last_name": "Jones",
+        "status": "pending",
+        "email_verified": false,
+        "timezone": "America/New_York",
+        "preferred_send_time": "08:00",
+        "created_at": "2026-04-01 11:00:00",
+        "updated_at": "2026-04-10 10:00:00"
+    },
+    {
+        "email": "david.lee@example.com",
+        "first_name": "David",
+        "last_name": "Lee",
+        "status": "active",
+        "email_verified": true,
+        "timezone": "Asia/Tokyo",
+        "preferred_send_time": "07:00",
+        "created_at": "2026-03-20 08:00:00",
+        "updated_at": "2026-04-10 10:00:00"
+    },
+    {
+        "email": "lisa.brown@example.com",
+        "first_name": "Lisa",
+        "last_name": "Brown",
+        "status": "unsubscribed",
+        "email_verified": true,
+        "timezone": "America/New_York",
+        "preferred_send_time": "08:00",
+        "created_at": "2026-02-15 10:00:00",
+        "updated_at": "2026-04-05 10:00:00"
+    },
+    {
+        "email": "michael.taylor@example.com",
+        "first_name": "Michael",
+        "last_name": "Taylor",
+        "status": "bounced",
+        "email_verified": false,
+        "timezone": "America/Chicago",
+        "preferred_send_time": "09:00",
+        "created_at": "2026-03-25 13:00:00",
+        "updated_at": "2026-04-08 10:00:00"
+    },
+    {
+        "email": "anna.schmidt@example.com",
+        "first_name": "Anna",
+        "last_name": "Schmidt",
+        "status": "active",
+        "email_verified": true,
+        "timezone": "Europe/Berlin",
+        "preferred_send_time": "08:00",
+        "created_at": "2026-03-28 15:00:00",
+        "updated_at": "2026-04-10 10:00:00"
+    },
+    {
+        "email": "john.doe@example.com",
+        "first_name": "John",
+        "last_name": "Doe",
+        "status": "active",
+        "email_verified": true,
+        "timezone": "America/New_York",
+        "preferred_send_time": "07:30",
+        "created_at": "2026-04-05 10:00:00",
+        "updated_at": "2026-04-10 10:00:00"
+    }
+]

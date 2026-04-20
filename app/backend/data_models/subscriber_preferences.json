@@ -1,0 +1,43 @@
+{
+    "title": "subscriber_preferences",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "subscriber_id": {
+            "type": "integer",
+            "description": "FK to subscribers"
+        },
+        "category_name": {
+            "type": "string",
+            "description": "Category name from categories table"
+        },
+        "newsletter_frequency": {
+            "type": "string",
+            "description": "Frequency: daily, weekly, breaking_only"
+        },
+        "template_preference": {
+            "type": "string",
+            "description": "Preferred template key"
+        },
+        "content_format": {
+            "type": "string",
+            "description": "Format: html, text, both"
+        },
+        "is_active": {
+            "type": "boolean",
+            "description": "Whether this preference is active"
+        },
+        "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created timestamp"
+        }
+    },
+    "required": [
+        "id",
+        "subscriber_id"
+    ]
+}

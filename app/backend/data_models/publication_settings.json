@@ -1,0 +1,32 @@
+{
+    "title": "publication_settings",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "setting_key": {
+            "type": "string",
+            "description": "Setting identifier like max_articles_per_fetch, auto_publish, etc."
+        },
+        "setting_value": {
+            "type": "string",
+            "description": "Setting value as string"
+        },
+        "description": {
+            "type": "string",
+            "description": "Human-readable description of the setting"
+        },
+        "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+        }
+    },
+    "required": [
+        "id",
+        "setting_key",
+        "setting_value"
+    ]
+}

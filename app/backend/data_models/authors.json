@@ -1,0 +1,86 @@
+{
+    "title": "authors",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "name": {
+            "type": "string",
+            "description": "Full name of the author"
+        },
+        "email": {
+            "type": "string",
+            "description": "Email address"
+        },
+        "bio": {
+            "type": "string",
+            "description": "Author biography"
+        },
+        "photo_url": {
+            "type": "string",
+            "description": "Profile photo URL or object key"
+        },
+        "role": {
+            "type": "string",
+            "description": "Role: admin, editor, senior_writer, contributor, guest"
+        },
+        "expertise_tags": {
+            "type": "string",
+            "description": "Comma-separated expertise areas like tech, politics, sports"
+        },
+        "social_twitter": {
+            "type": "string",
+            "description": "Twitter/X handle"
+        },
+        "social_linkedin": {
+            "type": "string",
+            "description": "LinkedIn profile URL"
+        },
+        "social_website": {
+            "type": "string",
+            "description": "Personal website URL"
+        },
+        "is_verified": {
+            "type": "boolean",
+            "description": "Whether author has verification badge"
+        },
+        "contract_status": {
+            "type": "string",
+            "description": "Contract status: active, on_hold, terminated, probation"
+        },
+        "payment_rate_type": {
+            "type": "string",
+            "description": "Payment type: per_word, per_article, revenue_share, salary"
+        },
+        "payment_rate_value": {
+            "type": "number",
+            "description": "Payment rate amount"
+        },
+        "total_articles": {
+            "type": "integer",
+            "description": "Cached total articles count"
+        },
+        "total_published": {
+            "type": "integer",
+            "description": "Cached published articles count"
+        },
+        "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Account creation date"
+        },
+        "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update date"
+        }
+    },
+    "required": [
+        "id",
+        "name",
+        "email",
+        "role"
+    ]
+}

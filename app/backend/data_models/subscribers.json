@@ -1,0 +1,56 @@
+{
+    "title": "subscribers",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "email": {
+            "type": "string",
+            "description": "Subscriber email address, unique"
+        },
+        "first_name": {
+            "type": "string",
+            "description": "First name"
+        },
+        "last_name": {
+            "type": "string",
+            "description": "Last name"
+        },
+        "status": {
+            "type": "string",
+            "description": "Status: pending, active, unsubscribed, bounced"
+        },
+        "email_verified": {
+            "type": "boolean",
+            "description": "Whether email is verified"
+        },
+        "verification_token": {
+            "type": "string",
+            "description": "Email verification token"
+        },
+        "timezone": {
+            "type": "string",
+            "description": "Subscriber timezone"
+        },
+        "preferred_send_time": {
+            "type": "string",
+            "description": "Preferred newsletter send time HH:MM"
+        },
+        "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created timestamp"
+        },
+        "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Updated timestamp"
+        }
+    },
+    "required": [
+        "id",
+        "email"
+    ]
+}

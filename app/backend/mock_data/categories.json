@@ -1,0 +1,42 @@
+[
+    {
+        "name": "general",
+        "label": "General",
+        "created_at": "2026-04-16 00:00:00"
+    },
+    {
+        "name": "technology",
+        "label": "Technology",
+        "created_at": "2026-04-16 00:00:00"
+    },
+    {
+        "name": "business",
+        "label": "Business",
+        "created_at": "2026-04-16 00:00:00"
+    },
+    {
+        "name": "science",
+        "label": "Science",
+        "created_at": "2026-04-16 00:00:00"
+    },
+    {
+        "name": "health",
+        "label": "Health",
+        "created_at": "2026-04-16 00:00:00"
+    },
+    {
+        "name": "sports",
+        "label": "Sports",
+        "created_at": "2026-04-16 00:00:00"
+    },
+    {
+        "name": "entertainment",
+        "label": "Entertainment",
+        "created_at": "2026-04-16 00:00:00"
+    },
+    {
+        "name": "world",
+        "label": "World",
+        "created_at": "2026-04-16 00:00:00"
+    }
+]

@@ -1,0 +1,52 @@
+[
+    {
+        "name": "Text-Only Minimalist",
+        "template_key": "template_1",
+        "description": "Clean text-only layout inspired by The Skimm and Axios AM. Perfect for quick reads.",
+        "html_content": "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px}.header{border-bottom:3px solid #007bff;padding-bottom:20px;margin-bottom:30px}.article{margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee}.article-title{font-size:18px;font-weight:700;margin-bottom:8px;color:#007bff}.article-summary{font-size:14px;color:#555;margin-bottom:10px}.article-meta{font-size:12px;color:#999}.footer{margin-top:40px;padding-top:20px;border-top:2px solid #eee;font-size:12px;color:#999}</style></head><body><div class=\"header\"><h1>{{newsletter_title}}</h1><p>{{date}} | {{total_articles}} stories</p></div>{{#articles}}<div class=\"article\"><div class=\"article-title\">{{title}}</div><div class=\"article-summary\">{{summary}}</div><div class=\"article-meta\">{{category}} • <a href=\"{{url}}\">Read more →</a></div></div>{{/articles}}<div class=\"footer\"><p>You're receiving this because you subscribed.</p><p><a href=\"{{unsubscribe_url}}\">Unsubscribe</a></p></div></body></html>",
+        "text_content": "{{newsletter_title}}\n{{date}}\n\n{{#articles}}\n{{title}}\n{{summary}}\n{{url}}\n\n{{/articles}}",
+        "preview_style": "minimalist",
+        "is_active": true,
+        "created_at": "2026-04-16 08:00:00"
+    },
+    {
+        "name": "Image + Text Cards",
+        "template_key": "template_2",
+        "description": "Modern card layout with images, inspired by Morning Brew and TechCrunch.",
+        "html_content": "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>body{font-family:'Helvetica Neue',Arial,sans-serif;background-color:#f4f4f4;margin:0;padding:20px}.container{max-width:600px;margin:0 auto;background:white;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)}.header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:30px;text-align:center}.article-card{padding:20px;border-bottom:1px solid #eee}.article-title{font-size:16px;font-weight:700;margin:0 0 8px 0;color:#333}.article-summary{font-size:14px;color:#666;margin:0 0 10px 0}.article-link{font-size:13px;color:#667eea;font-weight:600;text-decoration:none}.footer{background:#f8f9fa;padding:20px;text-align:center;font-size:12px;color:#999}</style></head><body><div class=\"container\"><div class=\"header\"><h1 style=\"margin:0\">{{newsletter_title}}</h1><p style=\"margin:10px 0 0 0;opacity:0.9\">{{date}} | {{total_articles}} stories</p></div>{{#articles}}<div class=\"article-card\"><h3 class=\"article-title\">{{title}}</h3><p class=\"article-summary\">{{summary}}</p><a href=\"{{url}}\" class=\"article-link\">Read story →</a></div>{{/articles}}<div class=\"footer\"><p><a href=\"{{unsubscribe_url}}\" style=\"color:#667eea\">Unsubscribe</a></p></div></div></body></html>",
+        "text_content": "{{newsletter_title}}\n{{date}}\n\n{{#articles}}\n{{title}}\n{{summary}}\n{{url}}\n\n{{/articles}}",
+        "preview_style": "cards",
+        "is_active": true,
+        "created_at": "2026-04-16 08:00:00"
+    },
+    {
+        "name": "Hero + Grid",
+        "template_key": "template_3",
+        "description": "Featured story hero with grid layout below, inspired by NYT and The Guardian.",
+        "html_content": "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>body{font-family:Georgia,'Times New Roman',serif;background:#fff;margin:0;padding:0}.container{max-width:650px;margin:0 auto}.header{border-bottom:1px solid #ddd;padding:20px 30px;text-align:center}.hero-article{margin:30px}.hero-title{font-size:28px;font-weight:700;margin:20px 0 15px 0;color:#121212}.hero-summary{font-size:16px;line-height:1.6;color:#555;margin-bottom:15px}.section-title{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#666;margin:30px 30px 20px 30px}.grid-article{padding:15px 30px;border-bottom:1px solid #eee}.grid-title{font-size:16px;font-weight:600;margin:0 0 8px 0;color:#333}.footer{background:#f5f5f5;padding:30px;text-align:center;font-size:12px;color:#777;margin-top:40px}</style></head><body><div class=\"container\"><div class=\"header\"><h1 style=\"margin:0;font-size:24px\">{{newsletter_title}}</h1><p style=\"color:#666;margin:5px 0 0 0\">{{date}}</p></div>{{#hero}}<div class=\"hero-article\"><h2 class=\"hero-title\">{{title}}</h2><p class=\"hero-summary\">{{summary}}</p><a href=\"{{url}}\" style=\"color:#007bff;text-decoration:none;font-weight:600\">Continue reading →</a></div>{{/hero}}<div class=\"section-title\">More Top Stories</div>{{#articles}}<div class=\"grid-article\"><h3 class=\"grid-title\">{{title}}</h3><p style=\"font-size:14px;color:#666;margin:0 0 8px 0\">{{summary}}</p><a href=\"{{url}}\" style=\"font-size:13px;color:#007bff;text-decoration:none\">Read →</a></div>{{/articles}}<div class=\"footer\"><p><a href=\"{{unsubscribe_url}}\" style=\"color:#007bff\">Unsubscribe</a></p></div></div></body></html>",
+        "text_content": "{{newsletter_title}}\n{{date}}\n\nFEATURED:\n{{hero_title}}\n{{hero_summary}}\n{{hero_url}}\n\nMORE STORIES:\n{{#articles}}\n{{title}}\n{{url}}\n{{/articles}}",
+        "preview_style": "hero",
+        "is_active": true,
+        "created_at": "2026-04-16 08:00:00"
+    },
+    {
+        "name": "Single Column Thumbnails",
+        "template_key": "template_4",
+        "description": "Full-width single column with category tags, inspired by Quartz and Vox.",
+        "html_content": "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#fafafa;margin:0;padding:20px 0}.container{max-width:600px;margin:0 auto;background:white}.header{background:#000;color:white;padding:40px 30px;text-align:center}.article-block{padding:25px 30px;border-bottom:1px solid #eee}.category-tag{display:inline-block;background:#f0f0f0;color:#333;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;text-transform:uppercase;margin-bottom:10px}.article-title{font-size:20px;font-weight:700;margin:0 0 12px 0;color:#1a1a1a;line-height:1.3}.article-summary{font-size:15px;color:#555;line-height:1.6;margin:0 0 15px 0}.article-cta{display:inline-block;background:#007bff;color:white;padding:10px 20px;text-decoration:none;border-radius:4px;font-weight:600;font-size:14px}.footer{background:#f5f5f5;padding:30px;text-align:center;font-size:12px;color:#888}</style></head><body><div class=\"container\"><div class=\"header\"><h1 style=\"margin:0;font-size:28px\">{{newsletter_title}}</h1><p style=\"margin:10px 0 0 0;opacity:0.8\">{{date}} • {{total_articles}} stories</p></div>{{#articles}}<div class=\"article-block\"><span class=\"category-tag\">{{category}}</span><h2 class=\"article-title\">{{title}}</h2><p class=\"article-summary\">{{summary}}</p><a href=\"{{url}}\" class=\"article-cta\">Read full story</a></div>{{/articles}}<div class=\"footer\"><p><a href=\"{{unsubscribe_url}}\" style=\"color:#007bff\">Unsubscribe</a></p></div></div></body></html>",
+        "text_content": "{{newsletter_title}}\n{{date}}\n\n{{#articles}}\n[{{category}}] {{title}}\n{{summary}}\n{{url}}\n\n{{/articles}}",
+        "preview_style": "single_column",
+        "is_active": true,
+        "created_at": "2026-04-16 08:00:00"
+    },
+    {
+        "name": "Magazine-Style Categories",
+        "template_key": "template_5",
+        "description": "Organized by categories with featured articles, inspired by The Atlantic and Wired.",
+        "html_content": "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:#fff;margin:0;padding:0}.container{max-width:650px;margin:0 auto}.masthead{border-bottom:3px solid #000;padding:30px;text-align:center}.category-section{margin:40px 0}.category-header{background:#f8f8f8;padding:15px 30px;border-left:4px solid #007bff}.category-name{font-size:18px;font-weight:700;color:#333;margin:0;text-transform:uppercase;letter-spacing:1px}.featured-in-category{padding:25px 30px;border-bottom:1px solid #eee}.featured-title{font-size:22px;font-weight:700;margin:0 0 12px 0;color:#111}.featured-summary{font-size:15px;color:#555;line-height:1.6;margin:0 0 15px 0}.compact-list{padding:0 30px 25px 30px}.compact-item{padding:15px 0;border-bottom:1px solid #f0f0f0}.compact-title{font-size:15px;font-weight:600;color:#333;margin:0 0 5px 0}.compact-meta{font-size:12px;color:#999}.footer{background:#1a1a1a;color:white;padding:40px 30px;text-align:center;margin-top:50px}</style></head><body><div class=\"container\"><div class=\"masthead\"><h1 style=\"margin:0;font-size:32px;letter-spacing:2px\">{{newsletter_title}}</h1><p style=\"color:#666;margin:10px 0 0 0\">{{date}}</p></div>{{#categories}}<div class=\"category-section\"><div class=\"category-header\"><h2 class=\"category-name\">{{name}}</h2></div>{{#featured}}<div class=\"featured-in-category\"><h3 class=\"featured-title\">{{title}}</h3><p class=\"featured-summary\">{{summary}}</p><a href=\"{{url}}\" style=\"color:#007bff;text-decoration:none;font-weight:600\">Read article →</a></div>{{/featured}}<div class=\"compact-list\">{{#articles}}<div class=\"compact-item\"><h4 class=\"compact-title\">{{title}}</h4><div class=\"compact-meta\"><a href=\"{{url}}\" style=\"color:#007bff\">Read</a></div></div>{{/articles}}</div></div>{{/categories}}<div class=\"footer\"><p style=\"margin:0;font-size:12px;opacity:0.6\"><a href=\"{{unsubscribe_url}}\" style=\"color:#fff\">Unsubscribe</a></p></div></div></body></html>",
+        "text_content": "{{newsletter_title}}\n{{date}}\n\n{{#categories}}\n=== {{name}} ===\n{{#featured}}\n★ {{title}}\n{{summary}}\n{{url}}\n{{/featured}}\n{{#articles}}\n- {{title}} {{url}}\n{{/articles}}\n\n{{/categories}}",
+        "preview_style": "magazine",
+        "is_active": true,
+        "created_at": "2026-04-16 08:00:00"
+    }
+]

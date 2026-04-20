@@ -1,0 +1,75 @@
+{
+    "title": "articles",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "title": {
+            "type": "string",
+            "description": "Article title"
+        },
+        "original_title": {
+            "type": "string",
+            "description": "Original title before rewrite"
+        },
+        "content": {
+            "type": "string",
+            "description": "Article content"
+        },
+        "original_content": {
+            "type": "string",
+            "description": "Original content before rewrite"
+        },
+        "summary": {
+            "type": "string",
+            "description": "Article summary"
+        },
+        "category": {
+            "type": "string",
+            "description": "Article category"
+        },
+        "source_name": {
+            "type": "string",
+            "description": "Source name"
+        },
+        "source_url": {
+            "type": "string",
+            "description": "Source URL"
+        },
+        "image_url": {
+            "type": "string",
+            "description": "Image URL"
+        },
+        "slug": {
+            "type": "string",
+            "description": "URL slug"
+        },
+        "tags": {
+            "type": "string",
+            "description": "Comma-separated tags"
+        },
+        "is_published": {
+            "type": "boolean",
+            "description": "Published status"
+        },
+        "published_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Published date"
+        },
+        "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created date"
+        }
+    },
+    "required": [
+        "id",
+        "title",
+        "content",
+        "category",
+        "slug"
+    ]
+}

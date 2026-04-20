@@ -1,0 +1,26 @@
+[
+    {
+        "setting_key": "max_articles_per_fetch",
+        "setting_value": "10",
+        "description": "Maximum number of articles to fetch per request",
+        "updated_at": "2026-04-16 08:00:00"
+    },
+    {
+        "setting_key": "auto_publish",
+        "setting_value": "false",
+        "description": "Automatically publish articles after AI rewriting",
+        "updated_at": "2026-04-16 08:00:00"
+    },
+    {
+        "setting_key": "default_category",
+        "setting_value": "general",
+        "description": "Default news category to fetch",
+        "updated_at": "2026-04-16 08:00:00"
+    },
+    {
+        "setting_key": "rewrite_style",
+        "setting_value": "professional",
+        "description": "AI rewriting style: professional, casual, formal",
+        "updated_at": "2026-04-16 08:00:00"
+    }
+]

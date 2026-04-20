@@ -1,0 +1,34 @@
+{
+    "title": "newsletter_sent_history",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "subscriber_id": {
+            "type": "integer",
+            "description": "FK to subscribers"
+        },
+        "article_id": {
+            "type": "integer",
+            "description": "FK to articles"
+        },
+        "sent_date": {
+            "type": "string",
+            "description": "Date sent YYYY-MM-DD"
+        },
+        "newsletter_type": {
+            "type": "string",
+            "description": "Type: daily, weekly, breaking, manual"
+        },
+        "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created timestamp"
+        }
+    },
+    "required": [
+        "id"
+    ]
+}

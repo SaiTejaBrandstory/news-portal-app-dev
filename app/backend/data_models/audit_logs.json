@@ -1,0 +1,40 @@
+{
+    "title": "audit_logs",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "user_id": {
+            "type": "string",
+            "description": "User who performed the action"
+        },
+        "action": {
+            "type": "string",
+            "description": "Action type: create, update, delete, publish, unpublish"
+        },
+        "entity_type": {
+            "type": "string",
+            "description": "Entity type: author, article, category, setting"
+        },
+        "entity_id": {
+            "type": "string",
+            "description": "ID of the affected entity"
+        },
+        "details": {
+            "type": "string",
+            "description": "JSON string with change details"
+        },
+        "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the action occurred"
+        }
+    },
+    "required": [
+        "id",
+        "action",
+        "entity_type"
+    ]
+}

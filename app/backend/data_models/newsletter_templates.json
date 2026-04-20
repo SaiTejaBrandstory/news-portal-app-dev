@@ -1,0 +1,48 @@
+{
+    "title": "newsletter_templates",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "name": {
+            "type": "string",
+            "description": "Template display name"
+        },
+        "template_key": {
+            "type": "string",
+            "description": "Unique key: template_1, template_2, etc."
+        },
+        "description": {
+            "type": "string",
+            "description": "Template description"
+        },
+        "html_content": {
+            "type": "string",
+            "description": "Full HTML template content"
+        },
+        "text_content": {
+            "type": "string",
+            "description": "Plain text fallback content"
+        },
+        "preview_style": {
+            "type": "string",
+            "description": "CSS style hint: minimalist, cards, hero, single_column, magazine"
+        },
+        "is_active": {
+            "type": "boolean",
+            "description": "Whether template is active"
+        },
+        "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created timestamp"
+        }
+    },
+    "required": [
+        "id",
+        "name",
+        "template_key"
+    ]
+}
