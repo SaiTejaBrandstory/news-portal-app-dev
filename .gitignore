@@ -24,7 +24,9 @@ __pycache__/
 .coverage
 htmlcov/
 .venv/
+.venv*/
 venv/
+venv*/
 env/
 
 # Node / frontend
