@@ -1,6 +1,25 @@
 import { createClient } from '@metagptx/web-sdk';
 import { withRetry, isTransientError } from './retry';
 
+const AUTH_REDIRECT_LOCK_KEY = 'auth_redirect_in_progress';
+
+function getErrorStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== 'object') return undefined;
+  const e = error as {
+    status?: number;
+    response?: { status?: number };
+    data?: { status?: number };
+  };
+  return e.response?.status ?? e.status ?? e.data?.status;
+}
+
+function handleUnauthorized(): void {
+  // Prevent redirect storms when multiple concurrent requests fail at once.
+  if (sessionStorage.getItem(AUTH_REDIRECT_LOCK_KEY) === '1') return;
+  sessionStorage.setItem(AUTH_REDIRECT_LOCK_KEY, '1');
+  window.location.href = '/';
+}
+
 /**
  * Create a resilient API client that wraps the SDK client
  * with automatic retry logic for transient DNS/network errors.
@@ -17,10 +36,17 @@ function createResilientClient() {
     label: string
   ): T {
     return (async (...args: unknown[]) => {
-      return withRetry(() => fn(...args), {
-        label,
-        shouldRetry: isTransientError,
-      });
+      try {
+        return await withRetry(() => fn(...args), {
+          label,
+          shouldRetry: isTransientError,
+        });
+      } catch (error) {
+        if (getErrorStatus(error) === 401) {
+          handleUnauthorized();
+        }
+        throw error;
+      }
     }) as unknown as T;
   }
 
