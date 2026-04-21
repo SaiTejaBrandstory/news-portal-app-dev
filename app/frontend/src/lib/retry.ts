@@ -15,8 +15,8 @@ const RETRYABLE_PATTERNS = [
   'balancer resolve',
   'ECONNREFUSED',
   'ENOTFOUND',
-  'ETIMEDOUT',
-  'timeout',
+  // 'timeout' intentionally excluded — long-running ops (scrape/rewrite) should NOT
+  // be retried on timeout; it causes duplicate backend work and apparent failures.
   'network error',
   'socket hang up',
   'failed to fetch',
@@ -24,7 +24,6 @@ const RETRYABLE_PATTERNS = [
   'networkerror',
   'callback lock',
   'node cache',
-  'aborted',
   'ERR_CONNECTION',
   'ERR_NAME_NOT_RESOLVED',
 ];

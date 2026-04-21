@@ -2,7 +2,12 @@ import logging
 import os
 from typing import Any, Optional
 
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
+
+# Load .env file into os.environ so __getattr__ dynamic lookups work.
+# This is safe to call multiple times; it won't overwrite already-set vars.
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"), override=False)
 
 logger = logging.getLogger(__name__)
 

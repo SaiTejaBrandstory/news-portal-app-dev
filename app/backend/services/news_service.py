@@ -852,6 +852,48 @@ CONTENT:
         logger.info(f"Scraped '{result['title'][:60]}' from {parsed.netloc}")
         return result
 
+    async def _scrape_and_rewrite_single(
+        self,
+        url: str,
+        rewrite_style: str,
+        words_length: str,
+    ) -> Dict[str, Any]:
+        """Scrape and AI-rewrite a single URL. Returns a preview dict."""
+        url = url.strip()
+        scraped = await self.scrape_url(url)
+
+        if scraped.get("error"):
+            return {
+                "url": url,
+                "original_title": "",
+                "original_content": "",
+                "rewritten_title": "",
+                "rewritten_summary": "",
+                "rewritten_content": "",
+                "source_name": scraped.get("source_name", ""),
+                "image_url": None,
+                "error": scraped["error"],
+            }
+
+        rewritten = await self.rewrite_article(
+            scraped["title"],
+            scraped["content"],
+            rewrite_style,
+            words_length,
+        )
+
+        return {
+            "url": url,
+            "original_title": scraped["title"],
+            "original_content": scraped["content"][:2000],
+            "rewritten_title": rewritten["title"],
+            "rewritten_summary": rewritten["summary"],
+            "rewritten_content": rewritten["content"],
+            "source_name": scraped["source_name"],
+            "image_url": scraped.get("image_url") or None,
+            "error": None,
+        }
+
     async def scrape_and_rewrite(
         self,
         urls: List[str],
@@ -859,17 +901,23 @@ CONTENT:
         rewrite_style: str = "professional",
         words_length: str = "medium",
     ) -> List[Dict[str, Any]]:
-        """Scrape multiple URLs, rewrite each with AI, return previews (not saved to DB)."""
+        """Scrape multiple URLs in parallel, rewrite each with AI, return previews."""
+        import asyncio
+
+        clean_urls = [u.strip() for u in urls if u.strip()]
+        if not clean_urls:
+            return []
+
+        tasks = [
+            self._scrape_and_rewrite_single(url, rewrite_style, words_length)
+            for url in clean_urls
+        ]
+        # Run all URLs concurrently — 4 links takes the same time as 1
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
         previews: List[Dict[str, Any]] = []
-
-        for url in urls:
-            url = url.strip()
-            if not url:
-                continue
-
-            scraped = await self.scrape_url(url)
-
-            if scraped.get("error"):
+        for url, result in zip(clean_urls, results):
+            if isinstance(result, Exception):
                 previews.append({
                     "url": url,
                     "original_title": "",
@@ -877,31 +925,12 @@ CONTENT:
                     "rewritten_title": "",
                     "rewritten_summary": "",
                     "rewritten_content": "",
-                    "source_name": scraped.get("source_name", ""),
+                    "source_name": "",
                     "image_url": None,
-                    "error": scraped["error"],
+                    "error": str(result),
                 })
-                continue
-
-            # Rewrite with AI
-            rewritten = await self.rewrite_article(
-                scraped["title"],
-                scraped["content"],
-                rewrite_style,
-                words_length,
-            )
-
-            previews.append({
-                "url": url,
-                "original_title": scraped["title"],
-                "original_content": scraped["content"][:2000],  # Truncate for preview
-                "rewritten_title": rewritten["title"],
-                "rewritten_summary": rewritten["summary"],
-                "rewritten_content": rewritten["content"],
-                "source_name": scraped["source_name"],
-                "image_url": scraped.get("image_url") or None,
-                "error": None,
-            })
+            else:
+                previews.append(result)
 
         return previews
 
