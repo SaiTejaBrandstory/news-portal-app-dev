@@ -356,6 +356,7 @@ export default function Index() {
                     id={article.id}
                     title={article.title}
                     summary={article.summary || ''}
+                    content={article.content}
                     category={article.category}
                     image_url={article.image_url || ''}
                     source_name={article.source_name || 'Unknown'}
@@ -408,6 +409,7 @@ export default function Index() {
                   id={featuredArticle.id}
                   title={featuredArticle.title}
                   summary={featuredArticle.summary || ''}
+                  content={featuredArticle.content}
                   category={featuredArticle.category}
                   image_url={featuredArticle.image_url || ''}
                   source_name={featuredArticle.source_name || 'Unknown'}
@@ -434,6 +436,7 @@ export default function Index() {
                       id={article.id}
                       title={article.title}
                       summary={article.summary || ''}
+                      content={article.content}
                       category={article.category}
                       image_url={article.image_url || ''}
                       source_name={article.source_name || 'Unknown'}

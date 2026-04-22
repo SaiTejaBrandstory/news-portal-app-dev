@@ -272,13 +272,21 @@ export default function ArticleDetail() {
     loadArticle();
   }, [slug]);
 
-  // SEO: Update document title and meta
+  // SEO: Update document title and meta description with clean content text
   useEffect(() => {
     if (article) {
       document.title = `${article.title} | NewsPortal`;
       const metaDesc = document.querySelector('meta[name="description"]');
       if (metaDesc) {
-        metaDesc.setAttribute('content', article.summary || article.title);
+        // Build a clean 155-char description from content (strips HTML + bullet markers)
+        const clean = article.content
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/^[\s•\-*►▸\d+\.\)]+/gm, '')
+          .replace(/\n+/g, ' ')
+          .replace(/\s{2,}/g, ' ')
+          .trim()
+          .slice(0, 155);
+        metaDesc.setAttribute('content', clean || article.title);
       }
     }
     return () => {
