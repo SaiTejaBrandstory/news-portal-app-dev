@@ -5,6 +5,10 @@
       "destination": "https://news-portal-backend-h0az.onrender.com/api/$1"
     },
     {
+      "source": "/sitemap.xml",
+      "destination": "https://news-portal-backend-h0az.onrender.com/sitemap.xml"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { client } from '@/lib/api';
+import { useSeoHead } from '@/hooks/useSeoHead';
 import { Newspaper, TrendingUp, Globe, Cpu, Heart, Gamepad2, Film, Search, ChevronRight, Shield, X, Tag, Layers } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -50,6 +51,7 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>
 };
 
 export default function Index() {
+  useSeoHead({ canonicalPath: '/' });
   const [searchParams, setSearchParams] = useSearchParams();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);

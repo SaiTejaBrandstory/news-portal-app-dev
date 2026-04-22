@@ -1,7 +1,10 @@
 import { createClient } from '@metagptx/web-sdk';
 import { withRetry, isTransientError } from './retry';
 
-const AUTH_REDIRECT_LOCK_KEY = 'auth_redirect_in_progress';
+/** Fired when any API call receives a 401. Admin page listens for this. */
+export const AUTH_EXPIRED_EVENT = 'auth:session-expired';
+
+const _unauthorizedFiredAt: { ts: number } = { ts: 0 };
 
 function getErrorStatus(error: unknown): number | undefined {
   if (!error || typeof error !== 'object') return undefined;
@@ -14,10 +17,11 @@ function getErrorStatus(error: unknown): number | undefined {
 }
 
 function handleUnauthorized(): void {
-  // Prevent redirect storms when multiple concurrent requests fail at once.
-  if (sessionStorage.getItem(AUTH_REDIRECT_LOCK_KEY) === '1') return;
-  sessionStorage.setItem(AUTH_REDIRECT_LOCK_KEY, '1');
-  window.location.href = '/';
+  // Debounce: don't fire more than once per 3 seconds.
+  const now = Date.now();
+  if (now - _unauthorizedFiredAt.ts < 3000) return;
+  _unauthorizedFiredAt.ts = now;
+  window.dispatchEvent(new CustomEvent(AUTH_EXPIRED_EVENT));
 }
 
 /**

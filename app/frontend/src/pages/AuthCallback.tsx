@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { client } from '../lib/api';
+import { useSeoHead } from '@/hooks/useSeoHead';
 
 export default function AuthCallback() {
+  useSeoHead({ noIndex: true });
   useEffect(() => {
     client.auth.login();
   }, []);

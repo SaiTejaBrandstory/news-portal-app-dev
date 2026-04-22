@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom';
 import { blogPosts, getBlogRoute } from '@/lib/blog';
+import { useSeoHead } from '@/hooks/useSeoHead';
 import { Newspaper, BookOpen, ArrowLeft, Shield, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-const BlogIndexPage = () => (
+const BlogIndexPage = () => {
+  useSeoHead({ canonicalPath: '/blog' });
+  return (
   <div className="min-h-screen bg-slate-50">
     {/* Header - matching NewsPortal theme */}
     <header className="bg-slate-900 text-white sticky top-0 z-50 shadow-lg">
@@ -149,6 +152,7 @@ const BlogIndexPage = () => (
       </div>
     </footer>
   </div>
-);
+  );
+};
 
 export default BlogIndexPage;

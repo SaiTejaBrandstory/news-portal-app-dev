@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef, KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { useSeoHead } from '@/hooks/useSeoHead';
+import { AUTH_EXPIRED_EVENT } from '@/lib/api';
 import { client } from '@/lib/api';
 import { fetchWithRetry } from '@/lib/retry';
 import { toast } from 'sonner';
@@ -32,6 +34,11 @@ import {
 } from '@/components/ui/collapsible';
 
 
+
+/** Cast the unknown return of client.apiCall.invoke to access .data safely. */
+function invokeData<T = Record<string, unknown>>(response: unknown): T {
+  return (response as { data: T }).data;
+}
 
 const IMAGE_BUCKET = 'article-images';
 const MAX_IMAGE_SIZE_MB = 5;
@@ -227,6 +234,7 @@ function CategorySelect({
 }
 
 export default function Admin() {
+  useSeoHead({ noIndex: true });
   const [user, setUser] = useState<UserData | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -297,21 +305,38 @@ export default function Admin() {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterTagInput, setFilterTagInput] = useState('');
 
-  // Auth check
+  // Auth check — runs on mount, then every 4 minutes to catch expired tokens.
   useEffect(() => {
-    async function checkAuth() {
+    async function checkAuth(isInitial = false) {
       try {
         const userData = await client.auth.me();
         if (userData?.data) {
           setUser(userData.data);
+        } else {
+          setUser(null);
         }
       } catch {
         setUser(null);
       } finally {
-        setAuthLoading(false);
+        if (isInitial) setAuthLoading(false);
       }
     }
-    checkAuth();
+
+    checkAuth(true);
+
+    // Re-validate session every 4 minutes in the background.
+    const interval = setInterval(() => checkAuth(false), 4 * 60 * 1000);
+
+    // Any API call returning 401 also triggers this immediately.
+    function onSessionExpired() {
+      setUser(null);
+    }
+    window.addEventListener(AUTH_EXPIRED_EVENT, onSessionExpired);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(AUTH_EXPIRED_EVENT, onSessionExpired);
+    };
   }, []);
 
   const handleLogin = async () => {
@@ -372,7 +397,7 @@ export default function Admin() {
         url: '/api/v1/news/settings',
         method: 'GET',
       });
-      setSettings(response.data || []);
+      setSettings((invokeData<SettingItem[]>(response)) || []);
     } catch (err) {
       console.error('Error loading settings:', err);
     }
@@ -399,7 +424,7 @@ export default function Admin() {
           rewrite_style: fetchStyle,
         },
       });
-      const result = response.data;
+      const result = invokeData<{ message?: string; total_fetched: number }>(response);
       toast.success(result.message || `Fetched ${result.total_fetched} articles`);
       await loadArticles();
     } catch (err: unknown) {
@@ -628,7 +653,7 @@ export default function Admin() {
         method: 'POST',
         data: { urls, category: scrapeCategory, rewrite_style: scrapeStyle, words_length: scrapeWordsLength, auto_publish: scrapeAutoPublish },
       });
-      const result = response.data;
+      const result = invokeData<{ articles: ScrapedPreview[]; message?: string; total_scraped: number }>(response);
       const previews: ScrapedPreview[] = (result.articles || []).map((a: ScrapedPreview) => ({ ...a, approved: !a.error }));
       setScrapePreviews(previews);
       toast.success(result.message || `Scraped ${result.total_scraped} articles`);
@@ -654,7 +679,7 @@ export default function Admin() {
         method: 'POST',
         data: { articles: approved.map(({ approved: _a, ...rest }) => rest), category: scrapeCategory, auto_publish: scrapeAutoPublish },
       });
-      const result = response.data;
+      const result = invokeData<{ message?: string; total_fetched: number }>(response);
       toast.success(result.message || `Saved ${result.total_fetched} articles`);
       setScrapePreviews([]);
       setScrapeUrls('');
@@ -735,7 +760,7 @@ export default function Admin() {
         },
       });
 
-      const result = response.data;
+      const result = invokeData<{ message?: string }>(response);
       toast.success(result.message || 'Article created successfully');
 
       // Reset form

@@ -9,7 +9,7 @@ from datetime import datetime
 from core.config import settings
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.routing import APIRouter
 
 # MODULE_IMPORTS_START
@@ -199,6 +199,68 @@ def health_check():
 def frontend_runtime_config():
     """Expose minimal runtime config expected by the frontend."""
     return {"API_BASE_URL": os.environ.get("VITE_API_BASE_URL", "http://127.0.0.1:8000")}
+
+
+@app.get("/sitemap.xml", response_class=Response)
+async def sitemap():
+    """Dynamic sitemap — includes all published articles with their last-modified date."""
+    from sqlalchemy import select as sa_select
+    from core.database import db_manager
+    from models.articles import Articles
+
+    frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+
+    static_pages = [
+        {"loc": f"{frontend_url}/",        "changefreq": "daily",   "priority": "1.0"},
+        {"loc": f"{frontend_url}/blog",     "changefreq": "weekly",  "priority": "0.8"},
+    ]
+
+    article_entries: list[dict] = []
+    try:
+        async with db_manager.async_session_maker() as session:
+            result = await session.execute(
+                sa_select(Articles.slug, Articles.published_at, Articles.created_at)
+                .where(Articles.is_published == True)
+                .order_by(Articles.published_at.desc().nullslast())
+            )
+            rows = result.all()
+
+        for slug, published_at, created_at in rows:
+            lastmod_dt = published_at or created_at
+            lastmod = lastmod_dt.strftime("%Y-%m-%dT%H:%M:%S+00:00") if lastmod_dt else datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S+00:00")
+            article_entries.append({
+                "loc": f"{frontend_url}/article/{slug}",
+                "lastmod": lastmod,
+                "changefreq": "monthly",
+                "priority": "0.7",
+            })
+    except Exception as e:
+        logger.warning(f"Sitemap: could not load articles — {e}")
+
+    def url_block(entry: dict) -> str:
+        lines = [f"  <url>", f"    <loc>{entry['loc']}</loc>"]
+        if "lastmod" in entry:
+            lines.append(f"    <lastmod>{entry['lastmod']}</lastmod>")
+        lines += [
+            f"    <changefreq>{entry['changefreq']}</changefreq>",
+            f"    <priority>{entry['priority']}</priority>",
+            "  </url>",
+        ]
+        return "\n".join(lines)
+
+    today = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S+00:00")
+    static_blocks = "\n".join(
+        url_block({**p, "lastmod": today}) for p in static_pages
+    )
+    article_blocks = "\n".join(url_block(a) for a in article_entries)
+
+    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{static_blocks}
+{article_blocks}
+</urlset>"""
+
+    return Response(content=xml.strip(), media_type="application/xml")
 
 
 def run_in_debug_mode(app: FastAPI):

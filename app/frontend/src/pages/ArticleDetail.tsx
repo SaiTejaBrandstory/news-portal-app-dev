@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useSeoHead } from '@/hooks/useSeoHead';
 import { client } from '@/lib/api';
 import DOMPurify from 'dompurify';
 import { ArrowLeft, Calendar, Tag, Share2, Newspaper, BookOpen, Shield } from 'lucide-react';
@@ -69,6 +70,7 @@ function RelatedArticleImage({ imageUrl, title }: { imageUrl: string | null; tit
 export default function ArticleDetail() {
   const { slug } = useParams<{ slug: string }>();
   const [article, setArticle] = useState<Article | null>(null);
+  useSeoHead({ canonicalPath: slug ? `/article/${slug}` : undefined });
   const [loading, setLoading] = useState(true);
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
 

@@ -61,6 +61,10 @@ export default defineConfig(({ command }) => {
           target: `http://localhost:8000`,
           changeOrigin: true,
         },
+        '/sitemap.xml': {
+          target: `http://localhost:8000`,
+          changeOrigin: true,
+        },
       },
       watch: { usePolling: true, interval: 600 },
     },

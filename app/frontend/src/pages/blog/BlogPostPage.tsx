@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import BlogArticleLayout from '@/components/blog/BlogArticleLayout';
 import MarkdownArticle from '@/components/blog/MarkdownArticle';
 import { getBlogPost, getPostSeoMeta } from '@/lib/blog';
+import { useSeoHead } from '@/hooks/useSeoHead';
 
 function getSlugFromPathname(pathname: string) {
   return pathname
@@ -40,6 +41,7 @@ const BlogPostPage = () => {
   const location = useLocation();
   const slug = getSlugFromPathname(location.pathname);
   const post = slug === '*' ? null : getBlogPost(slug);
+  useSeoHead({ canonicalPath: location.pathname });
 
   useEffect(() => {
     if (!post) {
