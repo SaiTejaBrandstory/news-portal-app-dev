@@ -441,9 +441,13 @@ export default function ArticleDetail() {
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight mb-4">
             {article.title}
           </h1>
-          {article.summary && (
-            <p className="text-lg text-slate-600 leading-relaxed mb-4">{article.summary}</p>
-          )}
+          <div className="mb-4">
+            <img
+              src="/live-now-badge.png"
+              alt="Live now"
+              className="h-12 w-auto"
+            />
+          </div>
           <div className="flex flex-col gap-3 text-sm text-slate-500">
             {displayDate && (
               <span className="flex items-center gap-1.5">
