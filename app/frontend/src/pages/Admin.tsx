@@ -11,7 +11,7 @@ import {
   Loader2, Download, ToggleLeft, ToggleRight, LogIn, ChevronDown,
   ExternalLink, Pencil, Save, X, Upload, ImageIcon, AlertCircle,
   Globe, Plus, Check, XCircle, Search, FileEdit, Tag, CalendarIcon,
-  Users, Mail,
+  Users, Mail, Layers,
 } from 'lucide-react';
 import AuthorsManagement from './Authors';
 import NewsletterEngine from './Newsletter';
@@ -80,6 +80,7 @@ interface EditFormData {
   title: string;
   summary: string;
   content: string;
+  category: string;
   tags: string[];
   published_at: string;
 }
@@ -256,7 +257,7 @@ export default function Admin() {
   // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
-  const [editForm, setEditForm] = useState<EditFormData>({ title: '', summary: '', content: '', tags: [], published_at: '' });
+  const [editForm, setEditForm] = useState<EditFormData>({ title: '', summary: '', content: '', category: 'general', tags: [], published_at: '' });
   const [saving, setSaving] = useState(false);
 
   // Image upload state (shared between edit dialog and manual submit)
@@ -520,6 +521,7 @@ export default function Admin() {
       title: article.title,
       summary: article.summary || '',
       content: article.content,
+      category: article.category || 'general',
       tags: parseTags(article.tags),
       published_at: toDateInputValue(article.published_at),
     });
@@ -610,6 +612,7 @@ export default function Admin() {
         title: editForm.title,
         summary: editForm.summary,
         content: cleanEditContent,
+        category: editForm.category,
         tags: joinTags(editForm.tags) || null,
       };
       if (newImageUrl !== undefined) updateData.image_url = newImageUrl;
@@ -1824,6 +1827,20 @@ export default function Admin() {
                       <AlertCircle className="w-3 h-3 shrink-0" /> {imageError}
                     </div>
                   )}
+                </div>
+
+                <Separator />
+
+                {/* Category */}
+                <div className="space-y-2">
+                  <Label className="font-semibold flex items-center gap-2 text-sm">
+                    <Layers className="w-4 h-4" /> Category
+                  </Label>
+                  <CategorySelect
+                    value={editForm.category}
+                    onValueChange={(val) => setEditForm((prev) => ({ ...prev, category: val }))}
+                    categories={categories}
+                  />
                 </div>
 
                 <Separator />
