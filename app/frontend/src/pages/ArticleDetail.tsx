@@ -282,7 +282,7 @@ export default function ArticleDetail() {
       }
     }
     return () => {
-      document.title = 'NewsPortal - AI-Powered News';
+      document.title = 'NewsPortal – AI-Powered News';
     };
   }, [article]);
 
