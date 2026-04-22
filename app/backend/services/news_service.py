@@ -256,15 +256,23 @@ class NewsService:
 
 Rewrite the following news article. Provide:
 1. A compelling, SEO-friendly headline (max 80 characters)
-2. A brief summary (max 160 characters, suitable for meta description)
+2. Exactly 3 to 4 key points that summarise the most important facts of the article.
+   - Each key point must be ONE clear, complete sentence (20-30 words).
+   - Written so a busy reader instantly understands the story without reading the full article.
+   - No vague filler. Every point must contain a specific fact, number, name, or outcome.
+   - Format: one point per line, each starting with "• "
 3. The full rewritten article (well-structured with clear flow)
 
 Original Title: {title}
 Original Content: {content}
 
-Respond in this exact format:
+Respond in this EXACT format (no extra text before or after):
 HEADLINE: [your headline]
-SUMMARY: [your summary]
+SUMMARY:
+• [key point 1]
+• [key point 2]
+• [key point 3]
+• [key point 4 — optional if genuinely needed]
 ARTICLE:
 [your full article]"""
 
@@ -281,7 +289,7 @@ ARTICLE:
 
             # Parse the response
             headline = title
-            summary = content[:160] if content else ""
+            summary = ""
             article = content
 
             if "HEADLINE:" in result_text:
@@ -293,20 +301,20 @@ ARTICLE:
                         summary = parts.split("ARTICLE:", 1)[0].strip()
                         article = parts.split("ARTICLE:", 1)[1].strip()
                     else:
-                        summary = parts.strip()[:160]
+                        summary = parts.strip()
                 else:
                     headline = parts.strip()[:80]
 
             return {
                 "title": headline[:200],
-                "summary": summary[:300],
+                "summary": summary[:800],  # enough for 3-4 bullet points
                 "content": article,
             }
         except Exception as e:
             logger.error(f"Error rewriting article: {e}")
             return {
                 "title": title,
-                "summary": content[:160] if content else "",
+                "summary": "",
                 "content": content,
             }
 

@@ -164,8 +164,8 @@ function SharePanel({ title, url }: SharePanelProps) {
 }
 
 /**
- * Parse a summary string into a list of key point strings.
- * Handles: existing bullet/numbered lists, multi-sentence paragraphs.
+ * Parse a summary string into 3-4 key point strings.
+ * Handles: bullet lists (• - * ► ▸), numbered lists, and plain paragraphs.
  */
 function parseKeyPoints(summary: string): string[] {
   if (!summary?.trim()) return [];
@@ -175,23 +175,24 @@ function parseKeyPoints(summary: string): string[] {
     .map((l) => l.trim())
     .filter(Boolean);
 
-  // If it looks like a list already (lines start with bullets/numbers/dashes)
-  const listPattern = /^(\d+[\.\)]|[-•*►▸])\s+/;
-  if (lines.length > 1 && lines.filter((l) => listPattern.test(l)).length >= Math.ceil(lines.length * 0.5)) {
-    return lines
-      .map((l) => l.replace(listPattern, '').trim())
-      .filter(Boolean)
-      .slice(0, 6);
+  // Strip bullet/number prefixes from each line
+  const bulletPattern = /^(\d+[\.\)]|[-•*►▸])\s*/;
+  const stripped = lines.map((l) => l.replace(bulletPattern, '').trim()).filter((l) => l.length > 15);
+
+  // If at least 2 lines look like list items, use them directly (AI-generated key points)
+  const bulletLines = lines.filter((l) => bulletPattern.test(l));
+  if (bulletLines.length >= 2) {
+    return stripped.slice(0, 4);
   }
 
-  // Otherwise join and split by sentence boundaries
-  const full = lines.join(' ');
+  // Fallback: split a paragraph into sentences
+  const full = stripped.join(' ') || summary.trim();
   const sentences = full
     .split(/(?<=[.!?])\s+/)
     .map((s) => s.trim())
     .filter((s) => s.length > 20);
 
-  return sentences.slice(0, 5);
+  return sentences.slice(0, 4);
 }
 
 function KeyPoints({ summary }: { summary: string | null }) {
