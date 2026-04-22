@@ -18,6 +18,8 @@ interface Article {
   summary: string | null;
   content: string;
   category: string;
+  author: string | null;
+  min_read: number | null;
   source_name: string | null;
   source_url: string | null;
   image_url: string | null;
@@ -357,6 +359,8 @@ export default function Index() {
                     title={article.title}
                     summary={article.summary || ''}
                     content={article.content}
+                    author={article.author}
+                    min_read={article.min_read}
                     category={article.category}
                     image_url={article.image_url || ''}
                     source_name={article.source_name || 'Unknown'}
@@ -410,6 +414,8 @@ export default function Index() {
                   title={featuredArticle.title}
                   summary={featuredArticle.summary || ''}
                   content={featuredArticle.content}
+                  author={featuredArticle.author}
+                  min_read={featuredArticle.min_read}
                   category={featuredArticle.category}
                   image_url={featuredArticle.image_url || ''}
                   source_name={featuredArticle.source_name || 'Unknown'}
@@ -437,6 +443,8 @@ export default function Index() {
                       title={article.title}
                       summary={article.summary || ''}
                       content={article.content}
+                      author={article.author}
+                      min_read={article.min_read}
                       category={article.category}
                       image_url={article.image_url || ''}
                       source_name={article.source_name || 'Unknown'}

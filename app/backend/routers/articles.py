@@ -26,6 +26,8 @@ class ArticlesData(BaseModel):
     original_content: str = None
     summary: str = None
     category: str
+    author: Optional[str] = None
+    min_read: Optional[int] = None
     source_name: str = None
     source_url: str = None
     image_url: str = None
@@ -44,6 +46,8 @@ class ArticlesUpdateData(BaseModel):
     original_content: Optional[str] = None
     summary: Optional[str] = None
     category: Optional[str] = None
+    author: Optional[str] = None
+    min_read: Optional[int] = None
     source_name: Optional[str] = None
     source_url: Optional[str] = None
     image_url: Optional[str] = None
@@ -63,6 +67,8 @@ class ArticlesResponse(BaseModel):
     original_content: Optional[str] = None
     summary: Optional[str] = None
     category: str
+    author: Optional[str] = None
+    min_read: Optional[int] = None
     source_name: Optional[str] = None
     source_url: Optional[str] = None
     image_url: Optional[str] = None
@@ -291,8 +297,11 @@ async def update_articles(
 
     service = ArticlesService(db)
     try:
-        # Only include non-None values for partial updates
-        update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
+        # Use only the fields that were explicitly sent in the request body.
+        # model_fields_set contains the names of fields the client actually provided,
+        # so we preserve intentional null values (e.g. clearing author) while still
+        # ignoring fields that were simply omitted.
+        update_dict = {k: v for k, v in data.model_dump().items() if k in data.model_fields_set}
         result = await service.update(id, update_dict)
         if not result:
             logger.warning(f"Articles with id {id} not found for update")

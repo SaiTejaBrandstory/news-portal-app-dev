@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Calendar, Tag } from 'lucide-react';
+import { Calendar, Clock3, Tag, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useArticleImage } from '@/hooks/useArticleImage';
 
@@ -8,6 +8,8 @@ interface ArticleCardProps {
   title: string;
   summary: string;
   content?: string;
+  author?: string | null;
+  min_read?: number | null;
   category: string;
   image_url: string;
   source_name: string;
@@ -67,6 +69,8 @@ export default function ArticleCard({
   title,
   summary,
   content,
+  author,
+  min_read,
   category,
   image_url,
   source_name,
@@ -81,6 +85,7 @@ export default function ArticleCard({
   const resolvedImage = useArticleImage(image_url || null, FALLBACK_IMAGE);
   const tagList = parseTags(tags);
   const previewText = getPreviewText(content, summary);
+  const readMinutes = min_read && min_read > 0 ? min_read : null;
 
   if (featured) {
     return (
@@ -110,6 +115,18 @@ export default function ArticleCard({
               </h2>
               <p className="text-white/80 text-sm line-clamp-3 mb-3">{previewText}</p>
               <div className="flex items-center gap-3 text-white/60 text-xs">
+                {author && (
+                  <span className="flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    {author}
+                  </span>
+                )}
+                {readMinutes && (
+                  <span className="flex items-center gap-1">
+                    <Clock3 className="w-3 h-3" />
+                    {readMinutes} min read
+                  </span>
+                )}
                 {displayDate && (
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
@@ -159,6 +176,12 @@ export default function ArticleCard({
             </div>
           )}
           <div className="flex items-center justify-end text-xs text-slate-400">
+            {readMinutes && (
+              <span className="flex items-center gap-1 mr-3">
+                <Clock3 className="w-3 h-3" />
+                {readMinutes} min read
+              </span>
+            )}
             {displayDate && (
               <span className="flex items-center gap-1">
                 <Calendar className="w-3 h-3" />

@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useSeoHead } from '@/hooks/useSeoHead';
 import { client } from '@/lib/api';
 import DOMPurify from 'dompurify';
-import { ArrowLeft, Calendar, Tag, Check, Copy, Newspaper, BookOpen, Shield, ListChecks } from 'lucide-react';
+import { ArrowLeft, Calendar, Tag, Check, Copy, Newspaper, BookOpen, Shield, ListChecks, Clock3, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,6 +20,8 @@ interface Article {
   summary: string | null;
   content: string;
   category: string;
+  author: string | null;
+  min_read: number | null;
   source_name: string | null;
   source_url: string | null;
   image_url: string | null;
@@ -383,6 +385,7 @@ export default function ArticleDetail() {
 
   const colorClass = categoryColors[article.category] || categoryColors.general;
   const displayDate = article.published_at || article.created_at;
+  const readMinutes = article.min_read && article.min_read > 0 ? article.min_read : null;
 
   // Structured data for SEO
   const structuredData = {
@@ -477,12 +480,26 @@ export default function ArticleDetail() {
             />
           </div>
           <div className="flex flex-col gap-3 text-sm text-slate-500">
-            {displayDate && (
-              <span className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 shrink-0" />
-                {formatDate(displayDate)}
-              </span>
-            )}
+            <div className="flex flex-wrap items-center gap-3">
+              {article.author && (
+                <span className="flex items-center gap-1.5">
+                  <User className="w-4 h-4 shrink-0" />
+                  {article.author}
+                </span>
+              )}
+              {readMinutes && (
+                <span className="flex items-center gap-1.5">
+                  <Clock3 className="w-4 h-4 shrink-0" />
+                  {readMinutes} min read
+                </span>
+              )}
+              {displayDate && (
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 shrink-0" />
+                  {formatDate(displayDate)}
+                </span>
+              )}
+            </div>
             <SharePanel title={article.title} url={window.location.href} />
           </div>
         </header>

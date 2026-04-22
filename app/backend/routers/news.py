@@ -168,6 +168,7 @@ async def manual_submit(
             category=data.category,
             source_url=(data.source_url or "").strip() or None,
             author=(data.author or "").strip() or None,
+            min_read=data.min_read,
             image_url=data.image_url,
             tags=(data.tags or "").strip() or None,
             published_at_str=(data.published_at or "").strip() or None,

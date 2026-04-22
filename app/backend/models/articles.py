@@ -14,6 +14,8 @@ class Articles(Base):
     original_content = Column(String, nullable=True)
     summary = Column(String, nullable=True)
     category = Column(String, nullable=False)
+    author = Column(String, nullable=True)
+    min_read = Column(Integer, nullable=True)
     source_name = Column(String, nullable=True)
     source_url = Column(String, nullable=True)
     image_url = Column(String, nullable=True)

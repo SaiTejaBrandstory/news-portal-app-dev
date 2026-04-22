@@ -95,6 +95,7 @@ class ManualSubmitRequest(BaseModel):
     category: str = "general"
     source_url: Optional[str] = None
     author: Optional[str] = None
+    min_read: Optional[int] = None
     image_url: Optional[str] = None
     tags: Optional[str] = None
     published_at: Optional[str] = None
@@ -124,6 +125,8 @@ class SearchResultItem(BaseModel):
     summary: Optional[str] = None
     content: str
     category: str
+    author: Optional[str] = None
+    min_read: Optional[int] = None
     source_name: Optional[str] = None
     source_url: Optional[str] = None
     image_url: Optional[str] = None

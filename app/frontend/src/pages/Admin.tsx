@@ -63,6 +63,8 @@ interface Article {
   summary: string | null;
   content: string;
   category: string;
+  author: string | null;
+  min_read: number | null;
   source_name: string | null;
   source_url: string | null;
   image_url: string | null;
@@ -91,6 +93,8 @@ interface EditFormData {
   summary: string;
   content: string;
   category: string;
+  author: string;
+  min_read: string;
   tags: string[];
   published_at: string;
 }
@@ -302,7 +306,7 @@ export default function Admin() {
   // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
-  const [editForm, setEditForm] = useState<EditFormData>({ title: '', summary: '', content: '', category: 'general', tags: [], published_at: '' });
+  const [editForm, setEditForm] = useState<EditFormData>({ title: '', summary: '', content: '', category: 'general', author: '', min_read: '', tags: [], published_at: '' });
   const [saving, setSaving] = useState(false);
 
   // Image upload state (shared between edit dialog and manual submit)
@@ -334,6 +338,7 @@ export default function Admin() {
   const [manualCategory, setManualCategory] = useState('general');
   const [manualSourceUrl, setManualSourceUrl] = useState('');
   const [manualAuthor, setManualAuthor] = useState('');
+  const [manualMinRead, setManualMinRead] = useState('');
   const [manualPublish, setManualPublish] = useState(false);
   const [manualSubmitting, setManualSubmitting] = useState(false);
   const [manualImageFile, setManualImageFile] = useState<File | null>(null);
@@ -573,6 +578,8 @@ export default function Admin() {
       summary: article.summary || '',
       content: article.content,
       category: article.category || 'general',
+      author: article.author || '',
+      min_read: article.min_read ? String(article.min_read) : '',
       tags: parseTags(article.tags),
       published_at: toDateInputValue(article.published_at),
     });
@@ -664,6 +671,8 @@ export default function Admin() {
         summary: editForm.summary,
         content: cleanEditContent,
         category: editForm.category,
+        author: editForm.author.trim() || null,
+        min_read: editForm.min_read ? Math.max(1, parseInt(editForm.min_read, 10) || 1) : null,
         tags: joinTags(editForm.tags) || null,
       };
       if (newImageUrl !== undefined) updateData.image_url = newImageUrl;
@@ -671,7 +680,13 @@ export default function Admin() {
         updateData.published_at = new Date(editForm.published_at + 'T00:00:00').toISOString();
       }
 
-      await client.entities.articles.update({ id: String(editingArticle.id), data: updateData });
+      // Use raw API call here so newly added fields (author/min_read) are not
+      // dropped by older generated SDK entity typings.
+      await client.apiCall.invoke({
+        url: `/api/v1/entities/articles/${editingArticle.id}`,
+        method: 'PUT',
+        data: updateData,
+      });
       toast.success('Article updated successfully');
       setEditDialogOpen(false);
       setEditingArticle(null);
@@ -807,6 +822,7 @@ export default function Admin() {
           category: manualCategory,
           source_url: manualSourceUrl.trim() || null,
           author: manualAuthor.trim() || null,
+          min_read: manualMinRead ? Math.max(1, parseInt(manualMinRead, 10) || 1) : null,
           image_url: uploadedImageUrl,
           tags: joinTags(manualTags) || null,
           published_at: manualPublishedAt || null,
@@ -824,6 +840,7 @@ export default function Admin() {
       setManualCategory('general');
       setManualSourceUrl('');
       setManualAuthor('');
+      setManualMinRead('');
       setManualPublish(false);
       setManualImageFile(null);
       setManualImagePreview(null);
@@ -1276,6 +1293,20 @@ export default function Admin() {
                         <Input id="manual-author" value={manualAuthor} onChange={(e) => setManualAuthor(e.target.value)} placeholder="Author name (optional)" className="text-sm" />
                       </div>
 
+                      {/* Min Read */}
+                      <div className="space-y-2">
+                        <Label htmlFor="manual-min-read" className="font-semibold text-sm">Min Read</Label>
+                        <Input
+                          id="manual-min-read"
+                          type="number"
+                          min={1}
+                          value={manualMinRead}
+                          onChange={(e) => setManualMinRead(e.target.value)}
+                          placeholder="e.g. 4 (optional)"
+                          className="text-sm"
+                        />
+                      </div>
+
                       {/* Source URL */}
                       <div className="space-y-2">
                         <Label htmlFor="manual-source" className="font-semibold text-sm">Source URL</Label>
@@ -1316,6 +1347,7 @@ export default function Admin() {
                           onClick={() => {
                             setManualTitle(''); setManualSummary(''); setManualContent('');
                             setManualCategory('general'); setManualSourceUrl(''); setManualAuthor('');
+                            setManualMinRead('');
                             setManualPublish(false); handleManualRemoveImage();
                             setManualTags([]); setManualPublishedAt('');
                           }}
@@ -1422,7 +1454,7 @@ export default function Admin() {
                   const filtered = articles.filter((a) => {
                     // Text search
                     if (q) {
-                      const searchable = [a.title, a.article_code || '', a.summary || '', a.content, a.source_name || ''].join(' ').toLowerCase();
+                      const searchable = [a.title, a.article_code || '', a.summary || '', a.content, a.author || '', a.source_name || ''].join(' ').toLowerCase();
                       if (!searchable.includes(q)) return false;
                     }
                     // Status
@@ -1911,6 +1943,38 @@ export default function Admin() {
                     placeholder="Add tag..."
                   />
                   <p className="text-[10px] text-slate-400">Press Enter or comma to add.</p>
+                </div>
+
+                <Separator />
+
+                {/* Author */}
+                <div className="space-y-2">
+                  <Label className="font-semibold flex items-center gap-2 text-sm">
+                    <Users className="w-4 h-4" /> Author
+                  </Label>
+                  <Input
+                    value={editForm.author}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, author: e.target.value }))}
+                    placeholder="Author name (optional)"
+                    className="text-sm"
+                  />
+                </div>
+
+                <Separator />
+
+                {/* Min Read */}
+                <div className="space-y-2">
+                  <Label className="font-semibold flex items-center gap-2 text-sm">
+                    <CalendarIcon className="w-4 h-4" /> Min Read
+                  </Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={editForm.min_read}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, min_read: e.target.value }))}
+                    placeholder="e.g. 4"
+                    className="text-sm"
+                  />
                 </div>
 
                 <Separator />
