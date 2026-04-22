@@ -47,7 +47,6 @@ CATEGORY_QUERIES = {
 }
 
 APIFY_SYNC_URL = "https://api.apify.com/v2/acts/lhotanova~google-news-scraper/run-sync-get-dataset-items"
-PIXABAY_API_URL = "https://pixabay.com/api/"
 
 
 def generate_slug(title: str) -> str:
@@ -106,118 +105,7 @@ class NewsService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.apify_token = os.environ.get("APIFY_TOKEN", "")
-        self.pixabay_api_key = os.environ.get("PIXABAY_API_KEY", "")
         self.ai_service = AIHubService()
-
-    # Common English stop words to exclude from image search queries
-    _STOP_WORDS = {
-        "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
-        "of", "with", "by", "from", "as", "is", "are", "was", "were", "be",
-        "been", "has", "have", "had", "do", "does", "did", "will", "would",
-        "could", "should", "may", "might", "shall", "can", "its", "it", "this",
-        "that", "these", "those", "he", "she", "they", "we", "you", "his",
-        "her", "their", "our", "your", "my", "new", "over", "after", "how",
-        "what", "when", "who", "not", "more", "about", "into", "than", "up",
-        "out", "also", "than", "just", "all", "says", "said", "amid", "amid",
-    }
-
-    # Map news categories to Pixabay category filter for higher quality hits
-    _PIXABAY_CATEGORY_MAP = {
-        "technology": "computer",
-        "business": "business",
-        "science": "science",
-        "health": "health",
-        "sports": "sports",
-        "entertainment": "music",
-        "world": "places",
-        "general": "",
-    }
-
-    def _build_image_query(self, title: str, category: str) -> tuple[str, str]:
-        """
-        Build a focused Pixabay search query and category filter from the article title.
-        Returns (query_string, pixabay_category).
-        Strategy:
-          1. Strip punctuation from title
-          2. Remove stop words
-          3. Keep the 3 most meaningful keywords (longest remaining words = most specific)
-          4. Fall back to category name if title produces nothing useful
-        """
-        cleaned = re.sub(r"[^a-zA-Z0-9\s]", " ", title or "").strip()
-        words = [
-            w for w in cleaned.split()
-            if len(w) > 3 and w.lower() not in self._STOP_WORDS
-        ]
-
-        # Sort by length descending — longer words are usually more specific nouns/topics
-        words_by_specificity = sorted(words, key=len, reverse=True)
-        top_keywords = words_by_specificity[:3]
-
-        query = " ".join(top_keywords) if top_keywords else category
-        pixabay_cat = self._PIXABAY_CATEGORY_MAP.get(category, "")
-        return query.strip(), pixabay_cat
-
-    async def _fetch_pixabay_image(self, query: str, pixabay_cat: str) -> str:
-        """Single Pixabay API call. Returns webformatURL or empty string."""
-        params: dict = {
-            "key": self.pixabay_api_key,
-            "q": query,
-            "image_type": "photo",
-            "orientation": "horizontal",
-            "safesearch": "true",
-            "order": "popular",
-            "per_page": 10,
-            "page": 1,
-        }
-        if pixabay_cat:
-            params["category"] = pixabay_cat
-
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            resp = await client.get(PIXABAY_API_URL, params=params)
-            resp.raise_for_status()
-            data = resp.json()
-
-        hits = data.get("hits", []) if isinstance(data, dict) else []
-        if not hits:
-            return ""
-
-        img = hits[0].get("webformatURL") or hits[0].get("largeImageURL") or hits[0].get("previewURL", "")
-        logger.info(f"Pixabay image resolved — query='{query}' cat='{pixabay_cat}' → {img[:80]}")
-        return img
-
-    async def _get_relevant_image_url(self, title: str, category: str) -> str:
-        """
-        Fetch a relevant Pixabay image for the given article title + category.
-        Strategy (three attempts, most specific → least specific):
-          1. Top 3 keywords from title + Pixabay category filter
-          2. Top 3 keywords from title (no category filter — wider net)
-          3. Category name only (always returns something)
-        Falls back to local placeholder if API key is missing or all attempts fail.
-        """
-        fallback = CATEGORY_IMAGES.get(category, CATEGORY_IMAGES["general"])
-        if not self.pixabay_api_key:
-            return fallback
-
-        query, pixabay_cat = self._build_image_query(title, category)
-
-        try:
-            # Attempt 1: keywords + category filter
-            img = await self._fetch_pixabay_image(query, pixabay_cat)
-            if img:
-                return img
-
-            # Attempt 2: same keywords, no category filter
-            img = await self._fetch_pixabay_image(query, "")
-            if img:
-                return img
-
-            # Attempt 3: bare category keyword — almost always returns results
-            img = await self._fetch_pixabay_image(category, "")
-            return img or fallback
-
-        except Exception as e:
-            logger.warning(f"Pixabay image lookup failed for '{query}': {e}")
-            return fallback
 
     async def fetch_news(self, category: str = "general", max_articles: int = 10) -> List[Dict[str, Any]]:
         """Fetch news from Apify Google News Scraper using the synchronous endpoint.
@@ -461,8 +349,8 @@ ARTICLE:
                 rewrite_style,
             )
 
-            # Determine image from Pixabay (not from scraped source image)
-            image_url = await self._get_relevant_image_url(rewritten["title"], category)
+            # Determine image
+            image_url = raw.get("image_url", "") or CATEGORY_IMAGES.get(category, CATEGORY_IMAGES["general"])
 
             # Create article record
             now = datetime.now()
@@ -544,7 +432,7 @@ ARTICLE:
             "category": category,
             "source_name": author or "Manual",
             "source_url": source_url,
-            "image_url": image_url or await self._get_relevant_image_url(title, category),
+            "image_url": image_url or CATEGORY_IMAGES.get(category, CATEGORY_IMAGES["general"]),
             "slug": generate_slug(title),
             "tags": tags,
             "is_published": is_published,
@@ -1002,7 +890,6 @@ CONTENT:
             words_length,
         )
 
-        pixabay_image = await self._get_relevant_image_url(rewritten["title"], "general")
         return {
             "url": url,
             "original_title": scraped["title"],
@@ -1011,7 +898,7 @@ CONTENT:
             "rewritten_summary": rewritten["summary"],
             "rewritten_content": rewritten["content"],
             "source_name": scraped["source_name"],
-            "image_url": pixabay_image,
+            "image_url": scraped.get("image_url") or None,
             "error": None,
         }
 
@@ -1078,10 +965,7 @@ CONTENT:
                     logger.info(f"Skipping duplicate scraped article: {art.get('rewritten_title', '')}")
                     continue
 
-            image_url = art.get("image_url") or await self._get_relevant_image_url(
-                art.get("rewritten_title", art.get("original_title", "news")),
-                category,
-            )
+            image_url = art.get("image_url") or CATEGORY_IMAGES.get(category, CATEGORY_IMAGES["general"])
             now = datetime.now()
             code = await _next_article_code(self.db)
 
