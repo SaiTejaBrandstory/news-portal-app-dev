@@ -381,7 +381,27 @@ export default function ArticleDetail() {
     },
   };
 
-  const contentParagraphs = isHTMLContent ? [] : article.content.split('\n').filter((p) => p.trim());
+  const contentParagraphs = useMemo(() => {
+    if (isHTMLContent || !article) return [];
+    const text = article.content;
+
+    // Try double-newline splits first (most common AI output format)
+    const byDoubleNewline = text.split(/\n{2,}/).map((p) => p.replace(/\n/g, ' ').trim()).filter(Boolean);
+    if (byDoubleNewline.length > 1) return byDoubleNewline;
+
+    // Try single-newline splits
+    const bySingleNewline = text.split(/\n/).map((p) => p.trim()).filter(Boolean);
+    if (bySingleNewline.length > 1) return bySingleNewline;
+
+    // Fallback: content arrived as one big block — split into ~3-sentence chunks
+    const sentences = text.match(/[^.!?]+[.!?]+(\s|$)/g) || [text];
+    const chunks: string[] = [];
+    for (let i = 0; i < sentences.length; i += 3) {
+      const chunk = sentences.slice(i, i + 3).join(' ').trim();
+      if (chunk) chunks.push(chunk);
+    }
+    return chunks.length > 0 ? chunks : [text];
+  }, [article, isHTMLContent]);
 
   return (
     <div className="min-h-screen bg-slate-50">
