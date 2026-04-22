@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useSeoHead } from '@/hooks/useSeoHead';
 import { client } from '@/lib/api';
 import DOMPurify from 'dompurify';
-import { ArrowLeft, Calendar, Tag, Check, Copy, Newspaper, BookOpen, Shield } from 'lucide-react';
+import { ArrowLeft, Calendar, Tag, Check, Copy, Newspaper, BookOpen, Shield, ListChecks } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -159,6 +159,63 @@ function SharePanel({ title, url }: SharePanelProps) {
       >
         {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
       </button>
+    </div>
+  );
+}
+
+/**
+ * Parse a summary string into a list of key point strings.
+ * Handles: existing bullet/numbered lists, multi-sentence paragraphs.
+ */
+function parseKeyPoints(summary: string): string[] {
+  if (!summary?.trim()) return [];
+
+  const lines = summary
+    .split(/\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  // If it looks like a list already (lines start with bullets/numbers/dashes)
+  const listPattern = /^(\d+[\.\)]|[-•*►▸])\s+/;
+  if (lines.length > 1 && lines.filter((l) => listPattern.test(l)).length >= Math.ceil(lines.length * 0.5)) {
+    return lines
+      .map((l) => l.replace(listPattern, '').trim())
+      .filter(Boolean)
+      .slice(0, 6);
+  }
+
+  // Otherwise join and split by sentence boundaries
+  const full = lines.join(' ');
+  const sentences = full
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 20);
+
+  return sentences.slice(0, 5);
+}
+
+function KeyPoints({ summary }: { summary: string | null }) {
+  const points = parseKeyPoints(summary || '');
+  if (points.length === 0) return null;
+
+  return (
+    <div className="mb-8 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-slate-50 overflow-hidden shadow-sm">
+      {/* Header bar */}
+      <div className="flex items-center gap-2 px-5 py-3 bg-blue-600 text-white">
+        <ListChecks className="w-4 h-4 shrink-0" />
+        <span className="text-sm font-bold tracking-wide uppercase">Key Points</span>
+      </div>
+      {/* Points list */}
+      <ul className="px-5 py-4 space-y-2.5">
+        {points.map((point, i) => (
+          <li key={i} className="flex items-start gap-3">
+            <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-blue-600 text-white text-[11px] font-bold flex items-center justify-center">
+              {i + 1}
+            </span>
+            <span className="text-slate-700 text-sm leading-relaxed">{point}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -407,6 +464,9 @@ export default function ArticleDetail() {
             />
           </div>
         )}
+
+        {/* Key Points */}
+        <KeyPoints summary={article.summary} />
 
         {/* Article Body */}
         {isHTMLContent ? (
