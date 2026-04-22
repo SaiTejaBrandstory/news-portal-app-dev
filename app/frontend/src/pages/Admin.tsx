@@ -43,6 +43,16 @@ function invokeData<T = Record<string, unknown>>(response: unknown): T {
 const IMAGE_BUCKET = 'article-images';
 const MAX_IMAGE_SIZE_MB = 5;
 const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
+const DEFAULT_CATEGORY_NAMES = new Set([
+  'general',
+  'technology',
+  'business',
+  'world',
+  'science',
+  'health',
+  'sports',
+  'entertainment',
+]);
 
 interface Article {
   id: number;
@@ -213,22 +223,57 @@ function CategorySelect({
   onValueChange,
   categories,
   includeAll = false,
+  onCreateCategory,
+  onDeleteCategory,
 }: {
   value: string;
   onValueChange: (val: string) => void;
   categories: CategoryItem[];
   includeAll?: boolean;
+  onCreateCategory?: (label: string) => Promise<string | null>;
+  onDeleteCategory?: (cat: CategoryItem) => Promise<void>;
 }) {
+  const CREATE_VALUE = '__create_new_category__';
+
   return (
-    <Select value={value} onValueChange={onValueChange}>
+    <Select
+      value={value}
+      onValueChange={async (val) => {
+        if (val === CREATE_VALUE) {
+          if (!onCreateCategory) return;
+          const label = window.prompt('Enter new category name');
+          if (!label) return;
+          const createdValue = await onCreateCategory(label);
+          if (createdValue) onValueChange(createdValue);
+          return;
+        }
+        onValueChange(val);
+      }}
+    >
       <SelectTrigger><SelectValue /></SelectTrigger>
       <SelectContent>
         {includeAll && <SelectItem value="all">All Categories</SelectItem>}
         {categories.map((cat) => (
-          <SelectItem key={cat.name} value={cat.name}>
-            {cat.label}
+          <SelectItem key={cat.name} value={cat.name} className="relative pr-9">
+            <span className="block truncate">{cat.label}</span>
+            {!DEFAULT_CATEGORY_NAMES.has(cat.name) && onDeleteCategory && (
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-5 w-5 items-center justify-center rounded text-slate-400 hover:bg-red-50 hover:text-red-600"
+                title={`Delete ${cat.label}`}
+                onMouseDown={async (e) => {
+                  // Prevent selecting category item when deleting
+                  e.preventDefault();
+                  e.stopPropagation();
+                  await onDeleteCategory(cat);
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
           </SelectItem>
         ))}
+        <SelectItem value={CREATE_VALUE}>+ Create new category</SelectItem>
       </SelectContent>
     </Select>
   );
@@ -462,8 +507,8 @@ export default function Admin() {
 
   // --- Category Management ---
 
-  const handleAddCategory = async () => {
-    const trimmed = newCategoryName.trim();
+  const createCategory = async (inputLabel: string): Promise<string | null> => {
+    const trimmed = inputLabel.trim();
     if (!trimmed) { toast.error('Category name is required'); return; }
 
     // Generate slug from name
@@ -473,7 +518,7 @@ export default function Admin() {
     // Check for duplicates
     if (categories.some((c) => c.name === slug)) {
       toast.error('Category already exists');
-      return;
+      return null;
     }
 
     setAddingCategory(true);
@@ -486,19 +531,25 @@ export default function Admin() {
         },
       });
       toast.success(`Category "${trimmed}" added`);
-      setNewCategoryName('');
       await loadCategories();
+      return slug;
     } catch {
       toast.error('Failed to add category');
+      return null;
     } finally {
       setAddingCategory(false);
     }
   };
 
+  const handleAddCategory = async () => {
+    const created = await createCategory(newCategoryName);
+    if (created) setNewCategoryName('');
+  };
+
   const handleDeleteCategory = async (catId: number, catName: string) => {
-    // Prevent deleting "general" as it's the default
-    if (catName === 'general') {
-      toast.error('Cannot delete the default "General" category');
+    // Prevent deleting built-in default categories
+    if (DEFAULT_CATEGORY_NAMES.has(catName)) {
+      toast.error('Cannot delete default categories');
       return;
     }
     setDeletingCategoryId(catId);
@@ -922,7 +973,7 @@ export default function Admin() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Category</Label>
-                    <CategorySelect value={fetchCategory} onValueChange={setFetchCategory} categories={categories} />
+                    <CategorySelect value={fetchCategory} onValueChange={setFetchCategory} categories={categories} onCreateCategory={createCategory} onDeleteCategory={async (cat) => handleDeleteCategory(cat.id, cat.name)} />
                   </div>
                   <div className="space-y-2">
                     <Label>Number of Articles</Label>
@@ -974,7 +1025,7 @@ export default function Admin() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="space-y-2">
                       <Label>Category</Label>
-                      <CategorySelect value={scrapeCategory} onValueChange={setScrapeCategory} categories={categories} />
+                      <CategorySelect value={scrapeCategory} onValueChange={setScrapeCategory} categories={categories} onCreateCategory={createCategory} onDeleteCategory={async (cat) => handleDeleteCategory(cat.id, cat.name)} />
                     </div>
                     <div className="space-y-2">
                       <Label>Rewrite Style</Label>
@@ -1192,7 +1243,7 @@ export default function Admin() {
                         <Label className="font-semibold text-sm">
                           Category <span className="text-red-500">*</span>
                         </Label>
-                        <CategorySelect value={manualCategory} onValueChange={setManualCategory} categories={categories} />
+                        <CategorySelect value={manualCategory} onValueChange={setManualCategory} categories={categories} onCreateCategory={createCategory} onDeleteCategory={async (cat) => handleDeleteCategory(cat.id, cat.name)} />
                       </div>
 
                       {/* Tags */}
@@ -1321,7 +1372,7 @@ export default function Admin() {
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs text-slate-500">Category</Label>
-                      <CategorySelect value={filterCategory} onValueChange={setFilterCategory} categories={categories} includeAll />
+                      <CategorySelect value={filterCategory} onValueChange={setFilterCategory} categories={categories} includeAll onCreateCategory={createCategory} onDeleteCategory={async (cat) => handleDeleteCategory(cat.id, cat.name)} />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs text-slate-500">Tags</Label>
@@ -1638,6 +1689,8 @@ export default function Admin() {
                               value={setting.setting_value}
                               onValueChange={(val) => handleUpdateSetting(setting.setting_key, val)}
                               categories={categories}
+                              onCreateCategory={createCategory}
+                              onDeleteCategory={async (cat) => handleDeleteCategory(cat.id, cat.name)}
                             />
                           ) : (
                             <Input defaultValue={setting.setting_value} onBlur={(e) => { if (e.target.value !== setting.setting_value) handleUpdateSetting(setting.setting_key, e.target.value); }} />
@@ -1840,6 +1893,8 @@ export default function Admin() {
                     value={editForm.category}
                     onValueChange={(val) => setEditForm((prev) => ({ ...prev, category: val }))}
                     categories={categories}
+                    onCreateCategory={createCategory}
+                    onDeleteCategory={async (cat) => handleDeleteCategory(cat.id, cat.name)}
                   />
                 </div>
 
