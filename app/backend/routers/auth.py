@@ -109,10 +109,17 @@ async def callback(
     """Handle OIDC callback."""
     backend_url = get_dynamic_backend_url(request)
 
+    # Resolve where to send the browser after auth.
+    # FRONTEND_URL must be set to the public domain, e.g. https://www.globalprcouncil.com
+    # AUTH_CALLBACK_PATH is the SPA path that handles the token (default: /news/auth/callback)
+    _frontend_base = os.environ.get("FRONTEND_URL", "").rstrip("/")
+    _frontend_origin = _frontend_base if _frontend_base else backend_url
+    _auth_callback_path = os.environ.get("AUTH_CALLBACK_PATH", "/news/auth/callback")
+
     def redirect_with_error(message: str) -> RedirectResponse:
         fragment = urlencode({"msg": message})
         return RedirectResponse(
-            url=f"{backend_url}/auth/error?{fragment}",
+            url=f"{_frontend_origin}/auth/error?{fragment}",
             status_code=status.HTTP_302_FOUND,
         )
 
@@ -219,7 +226,7 @@ async def callback(
             }
         )
 
-        redirect_url = f"{backend_url}/auth/callback?{fragment}"
+        redirect_url = f"{_frontend_origin}{_auth_callback_path}?{fragment}"
         logger.info("[callback] OIDC callback successful, redirecting to %s", redirect_url)
         redirect_response = RedirectResponse(
             url=redirect_url,
