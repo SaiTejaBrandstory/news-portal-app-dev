@@ -390,8 +390,21 @@ export default function Admin() {
     };
   }, []);
 
-  const handleLogin = async () => {
-    await client.auth.toLogin();
+  const handleLogin = () => {
+    // The SDK's toLogin() does window.location.href = '/api/v1/auth/login?...'
+    // which is a relative URL — on globalprcouncil.com that hits the main site.
+    // Instead, build the URL directly pointing at the Render backend.
+    const backendUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+    // from_url tells the backend where to redirect after OIDC — use the
+    // auth/callback page so AuthCallback.tsx can process the token.
+    const basePath = import.meta.env.BASE_URL || '/'; // e.g. '/news/'
+    const fromUrl = encodeURIComponent(`${basePath}auth/callback`.replace('//', '/'));
+    if (backendUrl) {
+      window.location.href = `${backendUrl}/api/v1/auth/login?from_url=${fromUrl}`;
+    } else {
+      // Local dev fallback — relative URL works fine via Vite proxy
+      window.location.href = `/api/v1/auth/login?from_url=${fromUrl}`;
+    }
   };
 
   // Load categories from DB
