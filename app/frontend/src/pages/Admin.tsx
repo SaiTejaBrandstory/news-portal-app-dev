@@ -402,7 +402,8 @@ export default function Admin() {
         sort: 'name',
         limit: 100,
       });
-      setCategories(response.data?.items || []);
+      const rawCats = response.data?.items;
+      setCategories(Array.isArray(rawCats) ? rawCats : []);
     } catch (err) {
       console.error('Error loading categories:', err);
     }
@@ -416,7 +417,8 @@ export default function Admin() {
         sort: '-created_at',
         limit: 100,
       });
-      const items: Article[] = response.data?.items || [];
+      const rawItems = response.data?.items;
+      const items: Article[] = Array.isArray(rawItems) ? rawItems : [];
       setArticles(items);
       const published = items.filter((a) => a.is_published).length;
       setStats({
@@ -448,7 +450,8 @@ export default function Admin() {
         url: '/api/v1/news/settings',
         method: 'GET',
       });
-      setSettings((invokeData<SettingItem[]>(response)) || []);
+      const raw = invokeData<unknown>(response);
+      setSettings(Array.isArray(raw) ? (raw as SettingItem[]) : []);
     } catch (err) {
       console.error('Error loading settings:', err);
     }

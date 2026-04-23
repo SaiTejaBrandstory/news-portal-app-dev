@@ -29,7 +29,11 @@ function handleUnauthorized(): void {
  * with automatic retry logic for transient DNS/network errors.
  */
 function createResilientClient() {
-  const rawClient = createClient();
+  // In production (globalprcouncil.com/news), the app origin doesn't proxy /api/ to
+  // the backend. Pass the backend URL directly so API calls bypass the origin.
+  // Falls back to '/' for local dev (where Vite proxy handles /api/).
+  const apiBase = import.meta.env.VITE_API_BASE_URL || '/';
+  const rawClient = createClient({ baseURL: apiBase });
 
   /**
    * Wrap any async SDK method with retry logic.
