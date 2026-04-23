@@ -54,9 +54,14 @@ export function useSeoHead(options: SeoOptions = {}) {
   useEffect(() => {
     const { canonicalPath, noIndex = false, title, description } = options;
 
+    // When a base path (e.g. /news) is set, location.pathname is relative to
+    // the basename. window.location.pathname has the full path including /news,
+    // which is what canonical URLs should reflect.
+    const resolvedPath = canonicalPath
+      ? canonicalPath
+      : window.location.pathname;
     const canonical =
-      window.location.origin +
-      (canonicalPath ?? location.pathname).replace(/\/$/, '') || '/';
+      window.location.origin + resolvedPath.replace(/\/$/, '') || window.location.origin + '/';
 
     // Canonical link
     upsertLink('canonical', canonical);

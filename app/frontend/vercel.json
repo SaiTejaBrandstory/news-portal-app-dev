@@ -1,12 +1,24 @@
 {
   "rewrites": [
     {
+      "source": "/news/api/(.*)",
+      "destination": "https://news-portal-backend-h0az.onrender.com/api/$1"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "https://news-portal-backend-h0az.onrender.com/api/$1"
     },
     {
+      "source": "/news/sitemap.xml",
+      "destination": "https://news-portal-backend-h0az.onrender.com/sitemap.xml"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "https://news-portal-backend-h0az.onrender.com/sitemap.xml"
+    },
+    {
+      "source": "/news/(.*)",
+      "destination": "/news/index.html"
     },
     {
       "source": "/(.*)",

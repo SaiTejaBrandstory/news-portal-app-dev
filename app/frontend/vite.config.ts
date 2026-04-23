@@ -28,6 +28,9 @@ export default defineConfig(({ command }) => {
   const blogPrerenderRoutes = command === 'build' ? getBlogRoutes() : [];
 
   return {
+    // Dev: base '/' so localhost:3000 still works normally.
+    // Production build: '/news/' so assets load correctly at globalprcouncil.com/news.
+    base: command === 'build' ? '/news/' : '/',
     plugins: [
       viteSourceLocator({
         prefix: 'mgx', // Prefix used to identify source locations; do not change.
