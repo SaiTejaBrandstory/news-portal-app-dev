@@ -183,10 +183,14 @@ export default function RichTextEditor({
     };
   }, []);
 
+  // Must use Vite `import.meta.env.BASE_URL` (e.g. `/news/`) or `/tinymce/...` 404s in prod
+  // and the server returns index.html — JS parser sees "<" and TinyMCE never hits `window`.
+  const tinyBase = `${import.meta.env.BASE_URL}tinymce`.replace(/\/$/, '');
+
   return (
     <div className="rich-text-editor-wrapper">
       <TinyMCEEditor
-        tinymceScriptSrc="/tinymce/tinymce.min.js"
+        tinymceScriptSrc={`${tinyBase}/tinymce.min.js`}
         licenseKey="gpl"
         onInit={(_evt, editor) => {
           editorRef.current = editor;
@@ -194,6 +198,8 @@ export default function RichTextEditor({
         value={value}
         onEditorChange={handleEditorChange}
         init={{
+          base_url: tinyBase,
+          suffix: '.min',
           height,
           menubar: false,
           toolbar_mode: 'wrap' as const,
