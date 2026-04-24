@@ -68,6 +68,18 @@ def _word_count(text: str) -> int:
     return len([w for w in plain.split(" ") if w])
 
 
+def _strip_markdown_artifacts(text: str) -> str:
+    if not text:
+        return ""
+    cleaned = re.sub(r"```[\s\S]*?```", lambda m: m.group(0).replace("```", ""), text)
+    cleaned = re.sub(r"^#{1,6}\s+", "", cleaned, flags=re.MULTILINE)
+    cleaned = re.sub(r"\*\*(.*?)\*\*", r"\1", cleaned)
+    cleaned = re.sub(r"\*(.*?)\*", r"\1", cleaned)
+    cleaned = re.sub(r"__(.*?)__", r"\1", cleaned)
+    cleaned = re.sub(r"`([^`]+)`", r"\1", cleaned)
+    return cleaned.strip()
+
+
 def _parse_apify_items(items: list) -> List[Dict[str, Any]]:
     """Parse Apify Google News Scraper response items into a normalized format.
 
@@ -288,6 +300,8 @@ Rewrite the following news article. Provide:
    - No vague filler. Every point must contain a specific fact, number, name, or outcome.
    - Format: one point per line, each starting with "• "
 3. The full rewritten article (well-structured with clear flow)
+4. Do NOT use Markdown syntax anywhere:
+   - No **bold**, no # headings, no backticks/code fences.
 
 Original Title: {title}
 Original Content: {content}
@@ -331,6 +345,10 @@ ARTICLE:
                 else:
                     headline = parts.strip()[:80]
 
+            headline = _strip_markdown_artifacts(headline)
+            summary = _strip_markdown_artifacts(summary)
+            article = _strip_markdown_artifacts(article)
+
             min_words, max_words = length_ranges.get(words_length, length_ranges["medium"])
             article_words = _word_count(article)
             if article_words < min_words or article_words > max_words:
@@ -351,7 +369,7 @@ ARTICLE:
                 adjust_response = await self.ai_service.gentxt(adjust_request)
                 adjusted = (adjust_response.content or "").strip()
                 if adjusted:
-                    article = adjusted
+                    article = _strip_markdown_artifacts(adjusted)
 
             return {
                 "title": headline[:200],

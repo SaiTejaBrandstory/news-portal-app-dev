@@ -178,6 +178,18 @@ function countWordsFromHtmlOrText(input: string): number {
   return plain.split(/\s+/).filter(Boolean).length;
 }
 
+function normalizeMarkdownLikeContent(input: string): string {
+  if (!input) return '';
+  return input
+    .replace(/```[\s\S]*?```/g, (m) => m.replace(/```/g, ''))
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .trim();
+}
+
 /** Parse comma-separated tags string into array */
 function parseTags(tags: string | null | undefined): string[] {
   if (!tags) return [];
@@ -847,7 +859,7 @@ export default function Admin() {
         toast.error('Rewrite failed: empty response');
         return;
       }
-      let finalContent = rewritten;
+      let finalContent = normalizeMarkdownLikeContent(rewritten);
       let finalCount = countWordsFromHtmlOrText(finalContent);
 
       if (finalCount < min || finalCount > max) {
@@ -874,7 +886,7 @@ export default function Admin() {
         const retryResult = invokeData<{ content?: string }>(retryResponse);
         const retried = retryResult?.content?.trim();
         if (retried) {
-          finalContent = retried;
+          finalContent = normalizeMarkdownLikeContent(retried);
           finalCount = countWordsFromHtmlOrText(finalContent);
         }
       }
