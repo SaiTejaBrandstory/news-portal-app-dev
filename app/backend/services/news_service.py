@@ -126,6 +126,8 @@ class NewsService:
         self.db = db
         self.apify_token = os.environ.get("APIFY_TOKEN", "")
         self.ai_service = AIHubService()
+        # Optional override, e.g. REWRITE_MODEL=anthropic/claude-3.5-sonnet
+        self.rewrite_model = os.environ.get("REWRITE_MODEL", "anthropic/claude-3.5-sonnet")
 
     async def fetch_news(self, category: str = "general", max_articles: int = 10) -> List[Dict[str, Any]]:
         """Fetch news from Apify Google News Scraper using the synchronous endpoint.
@@ -270,7 +272,6 @@ class NewsService:
             "standard_news": "Strictly 300-600 words; 3-5 medium paragraphs.",
             "detailed_report": "Strictly 600-1000 words; 5-8 paragraphs with context.",
             "explainer_analysis": "Strictly 800-1500 words; sectioned with subheadings.",
-            "longform_investigative": "Strictly 2000-5000 words; deep, varied paragraph lengths.",
         }
 
         length_ranges = {
@@ -282,7 +283,6 @@ class NewsService:
             "standard_news": (300, 600),
             "detailed_report": (600, 1000),
             "explainer_analysis": (800, 1500),
-            "longform_investigative": (2000, 5000),
         }
 
         style_instruction = style_prompts.get(style, style_prompts["professional"])
@@ -322,7 +322,7 @@ ARTICLE:
                     ChatMessage(role="system", content="You are a professional news editor and content rewriter. Always respond in the exact format requested."),
                     ChatMessage(role="user", content=prompt),
                 ],
-                model="deepseek-v3.2",
+                model=self.rewrite_model,
             )
             response = await self.ai_service.gentxt(request)
             result_text = response.content
@@ -351,10 +351,13 @@ ARTICLE:
 
             min_words, max_words = length_ranges.get(words_length, length_ranges["medium"])
             article_words = _word_count(article)
-            if article_words < min_words or article_words > max_words:
+            for _ in range(3):
+                if min_words <= article_words <= max_words:
+                    break
                 adjust_prompt = f"""Revise the ARTICLE below to STRICTLY {min_words}-{max_words} words.
+Current length: {article_words} words.
 Preserve all facts, names, dates, and claims. Keep journalistic quality and readability.
-Return only the revised article text.
+Do NOT use markdown formatting. Return only the revised article text.
 
 ARTICLE:
 {article}
@@ -364,12 +367,14 @@ ARTICLE:
                         ChatMessage(role="system", content="You are a precise news editor. Follow word-count constraints exactly."),
                         ChatMessage(role="user", content=adjust_prompt),
                     ],
-                    model="deepseek-v3.2",
+                    model=self.rewrite_model,
                 )
                 adjust_response = await self.ai_service.gentxt(adjust_request)
                 adjusted = (adjust_response.content or "").strip()
-                if adjusted:
-                    article = _strip_markdown_artifacts(adjusted)
+                if not adjusted:
+                    break
+                article = _strip_markdown_artifacts(adjusted)
+                article_words = _word_count(article)
 
             return {
                 "title": headline[:200],

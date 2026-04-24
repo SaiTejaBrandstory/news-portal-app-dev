@@ -41,6 +41,7 @@ function invokeData<T = Record<string, unknown>>(response: unknown): T {
 }
 
 const IMAGE_BUCKET = 'article-images';
+const REWRITE_MODEL = import.meta.env.VITE_REWRITE_MODEL || 'anthropic/claude-3.5-sonnet';
 const MAX_IMAGE_SIZE_MB = 5;
 const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 const DEFAULT_CATEGORY_NAMES = new Set([
@@ -123,8 +124,7 @@ type ContentFormatKey =
   | 'news_brief'
   | 'standard_news'
   | 'detailed_report'
-  | 'explainer_analysis'
-  | 'longform_investigative';
+  | 'explainer_analysis';
 
 const CONTENT_FORMAT_OPTIONS: Array<{
   value: ContentFormatKey;
@@ -137,7 +137,6 @@ const CONTENT_FORMAT_OPTIONS: Array<{
   { value: 'standard_news', label: 'Standard News Article', words: '300-600', structure: '3-5 medium paragraphs' },
   { value: 'detailed_report', label: 'Detailed News Report', words: '600-1000', structure: '5-8 paragraphs with context' },
   { value: 'explainer_analysis', label: 'Explainer / Analysis', words: '800-1500', structure: 'sectioned with subheadings' },
-  { value: 'longform_investigative', label: 'Long-form Investigative', words: '2000-5000+', structure: 'deep, varied paragraph lengths' },
 ];
 
 function getFormatMeta(format: ContentFormatKey) {
@@ -161,8 +160,6 @@ function getContentFormatWordRange(format: ContentFormatKey): { min: number; max
       return { min: 600, max: 1000 };
     case 'explainer_analysis':
       return { min: 800, max: 1500 };
-    case 'longform_investigative':
-      return { min: 2000, max: 5000 };
     default:
       return { min: 300, max: 600 };
   }
@@ -831,64 +828,60 @@ export default function Admin() {
     try {
       const formatMeta = getFormatMeta(editRewriteFormat);
       const { min, max } = getContentFormatWordRange(editRewriteFormat);
-      const response = await client.apiCall.invoke({
-        url: '/api/v1/aihub/gentxt',
-        method: 'POST',
-        data: {
-          model: 'deepseek-v3.2',
-          stream: false,
-          temperature: 0.5,
-          max_tokens: 4096,
-          messages: [
-            {
-              role: 'system',
-              content:
-                `You are a professional news editor. Rewrite article content for clarity, engagement, and correctness. Target format: ${formatMeta.label}. STRICT word count: ${min}-${max} words. Structure: ${formatMeta.structure}. Return only clean HTML body content (no markdown code fences, no explanations). Keep facts unchanged and preserve key details.`,
-            },
-            {
-              role: 'user',
-              content: `Rewrite this article in a ${fetchStyle} tone while keeping the meaning intact:\n\n${editForm.content}`,
-            },
-          ],
-        },
-      });
+      const maxTokens = Math.min(12000, Math.max(2500, Math.round(max * 2.2)));
+      let finalContent = '';
+      let finalCount = 0;
 
-      const result = invokeData<{ content?: string }>(response);
-      const rewritten = result?.content?.trim();
-      if (!rewritten) {
-        toast.error('Rewrite failed: empty response');
-        return;
-      }
-      let finalContent = normalizeMarkdownLikeContent(rewritten);
-      let finalCount = countWordsFromHtmlOrText(finalContent);
-
-      if (finalCount < min || finalCount > max) {
-        const retryResponse = await client.apiCall.invoke({
+      // Multi-pass strict rewrite: first full rewrite, then up to 2 targeted fixes.
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        const isFirst = attempt === 1;
+        const response = await client.apiCall.invoke({
           url: '/api/v1/aihub/gentxt',
           method: 'POST',
           data: {
-            model: 'deepseek-v3.2',
+            model: REWRITE_MODEL,
             stream: false,
-            temperature: 0.4,
-            max_tokens: 4096,
-            messages: [
-              {
-                role: 'system',
-                content: `Revise the provided HTML article to STRICTLY ${min}-${max} words while preserving all facts and names. Return HTML body content only.`,
-              },
-              {
-                role: 'user',
-                content: finalContent,
-              },
-            ],
+            temperature: isFirst ? 0.45 : 0.2,
+            max_tokens: maxTokens,
+            messages: isFirst
+              ? [
+                  {
+                    role: 'system',
+                    content:
+                      `You are a professional news editor. Rewrite article content for clarity, engagement, and correctness. Target format: ${formatMeta.label}. STRICT word count: ${min}-${max} words. Structure: ${formatMeta.structure}. Do not use markdown (no **, #, backticks). Return clean HTML body content only.`,
+                  },
+                  {
+                    role: 'user',
+                    content: `Rewrite this article in a ${fetchStyle} tone while keeping the meaning intact:\n\n${editForm.content}`,
+                  },
+                ]
+              : [
+                  {
+                    role: 'system',
+                    content:
+                      `Revise the provided article to STRICTLY ${min}-${max} words. Current length is ${finalCount} words. Preserve all facts, names, dates, and meaning. Do not use markdown. Return clean HTML body content only.`,
+                  },
+                  {
+                    role: 'user',
+                    content: finalContent,
+                  },
+                ],
           },
         });
-        const retryResult = invokeData<{ content?: string }>(retryResponse);
-        const retried = retryResult?.content?.trim();
-        if (retried) {
-          finalContent = normalizeMarkdownLikeContent(retried);
-          finalCount = countWordsFromHtmlOrText(finalContent);
-        }
+
+        const result = invokeData<{ content?: string }>(response);
+        const generated = result?.content?.trim();
+        if (!generated) continue;
+
+        finalContent = normalizeMarkdownLikeContent(generated);
+        finalCount = countWordsFromHtmlOrText(finalContent);
+
+        if (finalCount >= min && finalCount <= max) break;
+      }
+
+      if (!finalContent) {
+        toast.error('Rewrite failed: empty response');
+        return;
       }
 
       setEditForm((prev) => ({ ...prev, content: finalContent }));
@@ -921,7 +914,7 @@ export default function Admin() {
         url: '/api/v1/aihub/gentxt',
         method: 'POST',
         data: {
-          model: 'deepseek-v3.2',
+          model: REWRITE_MODEL,
           stream: false,
           temperature: 0.5,
           max_tokens: 300,
