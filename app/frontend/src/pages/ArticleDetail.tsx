@@ -474,7 +474,7 @@ export default function ArticleDetail() {
           </h1>
           <div className="mb-4">
             <img
-              src="/live-now-badge.png"
+              src={`${import.meta.env.BASE_URL}live-now-badge.png`}
               alt="Live now"
               className="h-12 w-auto"
             />
