@@ -308,6 +308,7 @@ export default function Admin() {
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [editForm, setEditForm] = useState<EditFormData>({ title: '', summary: '', content: '', category: 'general', author: '', min_read: '', tags: [], published_at: '' });
   const [saving, setSaving] = useState(false);
+  const [rewritingContent, setRewritingContent] = useState(false);
 
   // Image upload state (shared between edit dialog and manual submit)
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -711,6 +712,55 @@ export default function Admin() {
       toast.error('Failed to update article');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRewriteEditContent = async () => {
+    if (!editForm.content.trim()) {
+      toast.error('Add some content before rewriting');
+      return;
+    }
+
+    setRewritingContent(true);
+    try {
+      const response = await client.apiCall.invoke({
+        url: '/api/v1/aihub/gentxt',
+        method: 'POST',
+        data: {
+          model: 'deepseek-v3.2',
+          stream: false,
+          temperature: 0.5,
+          max_tokens: 4096,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are a professional news editor. Rewrite article content for clarity, engagement, and correctness. Return only the rewritten HTML body content (no markdown code fences, no explanations). Keep facts unchanged and preserve key details.',
+            },
+            {
+              role: 'user',
+              content: `Rewrite this article in a ${fetchStyle} tone while keeping the meaning intact:\n\n${editForm.content}`,
+            },
+          ],
+        },
+      });
+
+      const result = invokeData<{ content?: string }>(response);
+      const rewritten = result?.content?.trim();
+      if (!rewritten) {
+        toast.error('Rewrite failed: empty response');
+        return;
+      }
+
+      setEditForm((prev) => ({ ...prev, content: rewritten }));
+      toast.success('Content rewritten');
+    } catch (err: unknown) {
+      const errorMsg =
+        (err as { data?: { detail?: string } })?.data?.detail ||
+        'Failed to rewrite content';
+      toast.error(errorMsg);
+    } finally {
+      setRewritingContent(false);
     }
   };
 
@@ -1868,7 +1918,23 @@ export default function Admin() {
 
                 {/* Content - Rich Text Editor (dominant element) */}
                 <div className="space-y-2">
-                  <Label className="font-semibold text-slate-700">Content</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="font-semibold text-slate-700">Content</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRewriteEditContent}
+                      disabled={rewritingContent || saving || imageUploading}
+                      className="text-xs"
+                    >
+                      {rewritingContent ? (
+                        <><Loader2 className="w-3 h-3 mr-1 animate-spin" />Rewriting...</>
+                      ) : (
+                        <><RefreshCw className="w-3 h-3 mr-1" />Rewrite</>
+                      )}
+                    </Button>
+                  </div>
                   <RichTextEditor
                     value={editForm.content}
                     onChange={(content) => setEditForm((prev) => ({ ...prev, content }))}
