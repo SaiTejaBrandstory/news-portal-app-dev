@@ -309,6 +309,7 @@ export default function Admin() {
   const [editForm, setEditForm] = useState<EditFormData>({ title: '', summary: '', content: '', category: 'general', author: '', min_read: '', tags: [], published_at: '' });
   const [saving, setSaving] = useState(false);
   const [rewritingContent, setRewritingContent] = useState(false);
+  const [rewritingSummary, setRewritingSummary] = useState(false);
 
   // Image upload state (shared between edit dialog and manual submit)
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -761,6 +762,56 @@ export default function Admin() {
       toast.error(errorMsg);
     } finally {
       setRewritingContent(false);
+    }
+  };
+
+  const handleRewriteEditSummary = async () => {
+    const sourceText = editForm.summary.trim() || editForm.content.trim();
+    if (!sourceText) {
+      toast.error('Add summary or content before rewriting');
+      return;
+    }
+
+    setRewritingSummary(true);
+    try {
+      const response = await client.apiCall.invoke({
+        url: '/api/v1/aihub/gentxt',
+        method: 'POST',
+        data: {
+          model: 'deepseek-v3.2',
+          stream: false,
+          temperature: 0.5,
+          max_tokens: 300,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are a professional news editor. Rewrite and improve the summary into 2-3 concise sentences suitable for article preview cards and SEO. Return plain text only.',
+            },
+            {
+              role: 'user',
+              content: `Rewrite this summary in a ${fetchStyle} tone while keeping facts intact:\n\n${sourceText}`,
+            },
+          ],
+        },
+      });
+
+      const result = invokeData<{ content?: string }>(response);
+      const rewritten = result?.content?.trim();
+      if (!rewritten) {
+        toast.error('Rewrite failed: empty response');
+        return;
+      }
+
+      setEditForm((prev) => ({ ...prev, summary: rewritten }));
+      toast.success('Summary rewritten');
+    } catch (err: unknown) {
+      const errorMsg =
+        (err as { data?: { detail?: string } })?.data?.detail ||
+        'Failed to rewrite summary';
+      toast.error(errorMsg);
+    } finally {
+      setRewritingSummary(false);
     }
   };
 
@@ -1905,7 +1956,22 @@ export default function Admin() {
 
                 {/* Summary */}
                 <div className="space-y-2">
-                  <Label htmlFor="edit-summary" className="font-semibold text-slate-700">Summary</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="edit-summary" className="font-semibold text-slate-700">Summary</Label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleRewriteEditSummary}
+                      disabled={rewritingSummary || saving || imageUploading}
+                      className="text-xs text-white border-0 bg-gradient-to-r from-fuchsia-500 via-violet-500 to-indigo-500 hover:from-fuchsia-600 hover:via-violet-600 hover:to-indigo-600 shadow-md hover:shadow-lg transition-all"
+                    >
+                      {rewritingSummary ? (
+                        <><Loader2 className="w-3 h-3 mr-1 animate-spin" />Rewriting...</>
+                      ) : (
+                        <><Wand2 className="w-3 h-3 mr-1" />Rewrite</>
+                      )}
+                    </Button>
+                  </div>
                   <Textarea
                     id="edit-summary"
                     value={editForm.summary}
