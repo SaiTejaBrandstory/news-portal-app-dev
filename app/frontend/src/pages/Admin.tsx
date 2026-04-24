@@ -140,6 +140,38 @@ function toDateInputValue(dateStr: string | null): string {
   }
 }
 
+/** Normalize summary into bullet-point lines for editor readability */
+function formatSummaryAsBulletLines(text: string): string {
+  const input = text.trim();
+  if (!input) return '';
+
+  const lines = input
+    .split(/\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const bulletPattern = /^(\d+[\.\)]|[-•*►▸])\s*/;
+  const hasBulletList = lines.filter((l) => bulletPattern.test(l)).length >= 2;
+  if (hasBulletList) {
+    return lines
+      .map((l) => l.replace(bulletPattern, '').trim())
+      .filter((l) => l.length > 0)
+      .slice(0, 4)
+      .map((l) => `- ${l}`)
+      .join('\n');
+  }
+
+  const sentences = input
+    .replace(/\s+/g, ' ')
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 18)
+    .slice(0, 4);
+
+  if (sentences.length === 0) return input;
+  return sentences.map((s) => `- ${s}`).join('\n');
+}
+
 /** Check if a string is a full URL (http/https) vs an object_key */
 function isFullUrl(str: string | null | undefined): boolean {
   if (!str) return false;
@@ -786,7 +818,7 @@ export default function Admin() {
             {
               role: 'system',
               content:
-                'You are a professional news editor. Rewrite and improve the summary into 2-3 concise sentences suitable for article preview cards and SEO. Return plain text only.',
+                'You are a professional news editor. Rewrite and improve the summary into 3-4 concise key points suitable for preview cards and SEO. Return plain text as bullet lines only, one point per line, each line starting with "- ". No intro text.',
             },
             {
               role: 'user',
@@ -803,7 +835,7 @@ export default function Admin() {
         return;
       }
 
-      setEditForm((prev) => ({ ...prev, summary: rewritten }));
+      setEditForm((prev) => ({ ...prev, summary: formatSummaryAsBulletLines(rewritten) }));
       toast.success('Summary rewritten');
     } catch (err: unknown) {
       const errorMsg =
