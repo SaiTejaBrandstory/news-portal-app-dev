@@ -891,13 +891,12 @@ export default function Admin() {
         }
       }
 
-      if (finalCount < min || finalCount > max) {
-        toast.error(`Rewrite length mismatch: got ${finalCount} words, required ${min}-${max}`);
-        return;
-      }
-
       setEditForm((prev) => ({ ...prev, content: finalContent }));
-      toast.success(`Content rewritten (${finalCount} words)`);
+      if (finalCount < min || finalCount > max) {
+        toast.warning(`Rewritten and updated (${finalCount} words). Target was ${min}-${max}.`);
+      } else {
+        toast.success(`Content rewritten (${finalCount} words)`);
+      }
     } catch (err: unknown) {
       const errorMsg =
         (err as { data?: { detail?: string } })?.data?.detail ||
