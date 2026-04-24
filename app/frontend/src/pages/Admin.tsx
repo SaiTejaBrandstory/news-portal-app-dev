@@ -118,6 +118,38 @@ interface CategoryItem {
   label: string;
 }
 
+type ContentFormatKey =
+  | 'breaking_alert'
+  | 'news_brief'
+  | 'standard_news'
+  | 'detailed_report'
+  | 'explainer_analysis'
+  | 'longform_investigative';
+
+const CONTENT_FORMAT_OPTIONS: Array<{
+  value: ContentFormatKey;
+  label: string;
+  words: string;
+  structure: string;
+}> = [
+  { value: 'breaking_alert', label: 'Breaking News Alert', words: '50-120', structure: '1-2 short paragraphs' },
+  { value: 'news_brief', label: 'News Brief', words: '120-250', structure: '2-3 short paragraphs' },
+  { value: 'standard_news', label: 'Standard News Article', words: '300-600', structure: '3-5 medium paragraphs' },
+  { value: 'detailed_report', label: 'Detailed News Report', words: '600-1000', structure: '5-8 paragraphs with context' },
+  { value: 'explainer_analysis', label: 'Explainer / Analysis', words: '800-1500', structure: 'sectioned with subheadings' },
+  { value: 'longform_investigative', label: 'Long-form Investigative', words: '2000-5000+', structure: 'deep, varied paragraph lengths' },
+];
+
+function getFormatMeta(format: ContentFormatKey) {
+  return CONTENT_FORMAT_OPTIONS.find((item) => item.value === format) || CONTENT_FORMAT_OPTIONS[2];
+}
+
+function mapContentFormatToWordsLength(format: ContentFormatKey): 'short' | 'medium' | 'long' {
+  if (format === 'breaking_alert' || format === 'news_brief') return 'short';
+  if (format === 'standard_news') return 'medium';
+  return 'long';
+}
+
 /** Parse comma-separated tags string into array */
 function parseTags(tags: string | null | undefined): string[] {
   if (!tags) return [];
@@ -342,6 +374,7 @@ export default function Admin() {
   const [saving, setSaving] = useState(false);
   const [rewritingContent, setRewritingContent] = useState(false);
   const [rewritingSummary, setRewritingSummary] = useState(false);
+  const [editRewriteFormat, setEditRewriteFormat] = useState<ContentFormatKey>('standard_news');
 
   // Image upload state (shared between edit dialog and manual submit)
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -359,7 +392,7 @@ export default function Admin() {
   const [scrapeUrls, setScrapeUrls] = useState('');
   const [scrapeCategory, setScrapeCategory] = useState('general');
   const [scrapeStyle, setScrapeStyle] = useState('professional');
-  const [scrapeWordsLength, setScrapeWordsLength] = useState('medium');
+  const [scrapeContentFormat, setScrapeContentFormat] = useState<ContentFormatKey>('standard_news');
   const [scrapeAutoPublish, setScrapeAutoPublish] = useState(false);
   const [scraping, setScraping] = useState(false);
   const [scrapePreviews, setScrapePreviews] = useState<ScrapedPreview[]>([]);
@@ -756,6 +789,7 @@ export default function Admin() {
 
     setRewritingContent(true);
     try {
+      const formatMeta = getFormatMeta(editRewriteFormat);
       const response = await client.apiCall.invoke({
         url: '/api/v1/aihub/gentxt',
         method: 'POST',
@@ -768,7 +802,7 @@ export default function Admin() {
             {
               role: 'system',
               content:
-                'You are a professional news editor. Rewrite article content for clarity, engagement, and correctness. Return only the rewritten HTML body content (no markdown code fences, no explanations). Keep facts unchanged and preserve key details.',
+                `You are a professional news editor. Rewrite article content for clarity, engagement, and correctness. Target format: ${formatMeta.label}. Target length: ${formatMeta.words} words. Structure: ${formatMeta.structure}. Return only clean HTML body content (no markdown code fences, no explanations). Keep facts unchanged and preserve key details.`,
             },
             {
               role: 'user',
@@ -806,6 +840,7 @@ export default function Admin() {
 
     setRewritingSummary(true);
     try {
+      const formatMeta = getFormatMeta(editRewriteFormat);
       const response = await client.apiCall.invoke({
         url: '/api/v1/aihub/gentxt',
         method: 'POST',
@@ -818,7 +853,7 @@ export default function Admin() {
             {
               role: 'system',
               content:
-                'You are a professional news editor. Rewrite and improve the summary into 3-4 concise key points suitable for preview cards and SEO. Return plain text as bullet lines only, one point per line, each line starting with "- ". No intro text.',
+                `You are a professional news editor. Rewrite and improve the summary into concise key points suitable for preview cards and SEO. Match this format: ${formatMeta.label}. Target summary should reflect article scale (${formatMeta.words} words overall article). Return plain text as bullet lines only, one point per line, each line starting with "- ". No intro text.`,
             },
             {
               role: 'user',
@@ -869,7 +904,13 @@ export default function Admin() {
       const response = await client.apiCall.invoke({
         url: '/api/v1/news/scrape',
         method: 'POST',
-        data: { urls, category: scrapeCategory, rewrite_style: scrapeStyle, words_length: scrapeWordsLength, auto_publish: scrapeAutoPublish },
+        data: {
+          urls,
+          category: scrapeCategory,
+          rewrite_style: scrapeStyle,
+          words_length: mapContentFormatToWordsLength(scrapeContentFormat),
+          auto_publish: scrapeAutoPublish,
+        },
       });
       const result = invokeData<{ articles: ScrapedPreview[]; message?: string; total_scraped: number }>(response);
       const previews: ScrapedPreview[] = (result.articles || []).map((a: ScrapedPreview) => ({ ...a, approved: !a.error }));
@@ -1205,13 +1246,15 @@ export default function Admin() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Words Length</Label>
-                      <Select value={scrapeWordsLength} onValueChange={setScrapeWordsLength}>
+                      <Label>Content Format</Label>
+                      <Select value={scrapeContentFormat} onValueChange={(v) => setScrapeContentFormat(v as ContentFormatKey)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="short">Short (~150 words)</SelectItem>
-                          <SelectItem value="medium">Medium (~300 words)</SelectItem>
-                          <SelectItem value="long">Long (~500 words)</SelectItem>
+                          {CONTENT_FORMAT_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label} ({opt.words})
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -1988,6 +2031,24 @@ export default function Admin() {
 
                 {/* Summary */}
                 <div className="space-y-2">
+                  <div className="space-y-2 rounded-md border border-violet-100 bg-violet-50/40 p-3">
+                    <Label className="text-xs font-semibold text-violet-700">Rewrite Content Format</Label>
+                    <Select value={editRewriteFormat} onValueChange={(v) => setEditRewriteFormat(v as ContentFormatKey)}>
+                      <SelectTrigger className="bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CONTENT_FORMAT_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label} ({opt.words})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-violet-700/80">
+                      Target structure: {getFormatMeta(editRewriteFormat).structure}
+                    </p>
+                  </div>
                   <div className="flex items-center justify-between">
                     <Label htmlFor="edit-summary" className="font-semibold text-slate-700">Summary</Label>
                     <Button
