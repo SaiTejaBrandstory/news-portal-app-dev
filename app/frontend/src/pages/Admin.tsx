@@ -11,7 +11,7 @@ import {
   Loader2, Download, ToggleLeft, ToggleRight, LogIn, ChevronDown,
   ExternalLink, Pencil, Save, X, Upload, ImageIcon, AlertCircle,
   Globe, Plus, Check, XCircle, Search, FileEdit, Tag, CalendarIcon,
-  Users, Mail, Layers,
+  Users, Mail, Layers, Wand2,
 } from 'lucide-react';
 import AuthorsManagement from './Authors';
 import NewsletterEngine from './Newsletter';
@@ -1922,16 +1922,15 @@ export default function Admin() {
                     <Label className="font-semibold text-slate-700">Content</Label>
                     <Button
                       type="button"
-                      variant="outline"
                       size="sm"
                       onClick={handleRewriteEditContent}
                       disabled={rewritingContent || saving || imageUploading}
-                      className="text-xs"
+                      className="text-xs text-white border-0 bg-gradient-to-r from-fuchsia-500 via-violet-500 to-indigo-500 hover:from-fuchsia-600 hover:via-violet-600 hover:to-indigo-600 shadow-md hover:shadow-lg transition-all"
                     >
                       {rewritingContent ? (
                         <><Loader2 className="w-3 h-3 mr-1 animate-spin" />Rewriting...</>
                       ) : (
-                        <><RefreshCw className="w-3 h-3 mr-1" />Rewrite</>
+                        <><Wand2 className="w-3 h-3 mr-1" />Rewrite</>
                       )}
                     </Button>
                   </div>
