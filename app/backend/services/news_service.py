@@ -60,6 +60,14 @@ def generate_slug(title: str) -> str:
     return f"{slug}-{timestamp}"
 
 
+def _word_count(text: str) -> int:
+    plain = re.sub(r"<[^>]*>", " ", text or "")
+    plain = re.sub(r"\s+", " ", plain).strip()
+    if not plain:
+        return 0
+    return len([w for w in plain.split(" ") if w])
+
+
 def _parse_apify_items(items: list) -> List[Dict[str, Any]]:
     """Parse Apify Google News Scraper response items into a normalized format.
 
@@ -245,6 +253,24 @@ class NewsService:
             "short": "Keep the article concise, approximately 100-150 words (1-2 short paragraphs).",
             "medium": "Write a moderately detailed article, approximately 250-350 words (3-4 paragraphs).",
             "long": "Write a comprehensive, in-depth article, approximately 500-700 words (5-7 paragraphs with detailed analysis).",
+            "breaking_alert": "Strictly 50-120 words; 1-2 short paragraphs.",
+            "news_brief": "Strictly 120-250 words; 2-3 short paragraphs.",
+            "standard_news": "Strictly 300-600 words; 3-5 medium paragraphs.",
+            "detailed_report": "Strictly 600-1000 words; 5-8 paragraphs with context.",
+            "explainer_analysis": "Strictly 800-1500 words; sectioned with subheadings.",
+            "longform_investigative": "Strictly 2000-5000 words; deep, varied paragraph lengths.",
+        }
+
+        length_ranges = {
+            "short": (100, 150),
+            "medium": (250, 350),
+            "long": (500, 700),
+            "breaking_alert": (50, 120),
+            "news_brief": (120, 250),
+            "standard_news": (300, 600),
+            "detailed_report": (600, 1000),
+            "explainer_analysis": (800, 1500),
+            "longform_investigative": (2000, 5000),
         }
 
         style_instruction = style_prompts.get(style, style_prompts["professional"])
@@ -304,6 +330,28 @@ ARTICLE:
                         summary = parts.strip()
                 else:
                     headline = parts.strip()[:80]
+
+            min_words, max_words = length_ranges.get(words_length, length_ranges["medium"])
+            article_words = _word_count(article)
+            if article_words < min_words or article_words > max_words:
+                adjust_prompt = f"""Revise the ARTICLE below to STRICTLY {min_words}-{max_words} words.
+Preserve all facts, names, dates, and claims. Keep journalistic quality and readability.
+Return only the revised article text.
+
+ARTICLE:
+{article}
+"""
+                adjust_request = GenTxtRequest(
+                    messages=[
+                        ChatMessage(role="system", content="You are a precise news editor. Follow word-count constraints exactly."),
+                        ChatMessage(role="user", content=adjust_prompt),
+                    ],
+                    model="deepseek-v3.2",
+                )
+                adjust_response = await self.ai_service.gentxt(adjust_request)
+                adjusted = (adjust_response.content or "").strip()
+                if adjusted:
+                    article = adjusted
 
             return {
                 "title": headline[:200],

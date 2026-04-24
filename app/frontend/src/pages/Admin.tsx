@@ -144,10 +144,38 @@ function getFormatMeta(format: ContentFormatKey) {
   return CONTENT_FORMAT_OPTIONS.find((item) => item.value === format) || CONTENT_FORMAT_OPTIONS[2];
 }
 
-function mapContentFormatToWordsLength(format: ContentFormatKey): 'short' | 'medium' | 'long' {
-  if (format === 'breaking_alert' || format === 'news_brief') return 'short';
-  if (format === 'standard_news') return 'medium';
-  return 'long';
+function mapContentFormatToWordsLength(format: ContentFormatKey): string {
+  // Pass explicit format key to backend so word-range prompts stay precise.
+  return format;
+}
+
+function getContentFormatWordRange(format: ContentFormatKey): { min: number; max: number } {
+  switch (format) {
+    case 'breaking_alert':
+      return { min: 50, max: 120 };
+    case 'news_brief':
+      return { min: 120, max: 250 };
+    case 'standard_news':
+      return { min: 300, max: 600 };
+    case 'detailed_report':
+      return { min: 600, max: 1000 };
+    case 'explainer_analysis':
+      return { min: 800, max: 1500 };
+    case 'longform_investigative':
+      return { min: 2000, max: 5000 };
+    default:
+      return { min: 300, max: 600 };
+  }
+}
+
+function countWordsFromHtmlOrText(input: string): number {
+  const plain = input
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!plain) return 0;
+  return plain.split(/\s+/).filter(Boolean).length;
 }
 
 /** Parse comma-separated tags string into array */
@@ -790,6 +818,7 @@ export default function Admin() {
     setRewritingContent(true);
     try {
       const formatMeta = getFormatMeta(editRewriteFormat);
+      const { min, max } = getContentFormatWordRange(editRewriteFormat);
       const response = await client.apiCall.invoke({
         url: '/api/v1/aihub/gentxt',
         method: 'POST',
@@ -802,7 +831,7 @@ export default function Admin() {
             {
               role: 'system',
               content:
-                `You are a professional news editor. Rewrite article content for clarity, engagement, and correctness. Target format: ${formatMeta.label}. Target length: ${formatMeta.words} words. Structure: ${formatMeta.structure}. Return only clean HTML body content (no markdown code fences, no explanations). Keep facts unchanged and preserve key details.`,
+                `You are a professional news editor. Rewrite article content for clarity, engagement, and correctness. Target format: ${formatMeta.label}. STRICT word count: ${min}-${max} words. Structure: ${formatMeta.structure}. Return only clean HTML body content (no markdown code fences, no explanations). Keep facts unchanged and preserve key details.`,
             },
             {
               role: 'user',
@@ -818,9 +847,45 @@ export default function Admin() {
         toast.error('Rewrite failed: empty response');
         return;
       }
+      let finalContent = rewritten;
+      let finalCount = countWordsFromHtmlOrText(finalContent);
 
-      setEditForm((prev) => ({ ...prev, content: rewritten }));
-      toast.success('Content rewritten');
+      if (finalCount < min || finalCount > max) {
+        const retryResponse = await client.apiCall.invoke({
+          url: '/api/v1/aihub/gentxt',
+          method: 'POST',
+          data: {
+            model: 'deepseek-v3.2',
+            stream: false,
+            temperature: 0.4,
+            max_tokens: 4096,
+            messages: [
+              {
+                role: 'system',
+                content: `Revise the provided HTML article to STRICTLY ${min}-${max} words while preserving all facts and names. Return HTML body content only.`,
+              },
+              {
+                role: 'user',
+                content: finalContent,
+              },
+            ],
+          },
+        });
+        const retryResult = invokeData<{ content?: string }>(retryResponse);
+        const retried = retryResult?.content?.trim();
+        if (retried) {
+          finalContent = retried;
+          finalCount = countWordsFromHtmlOrText(finalContent);
+        }
+      }
+
+      if (finalCount < min || finalCount > max) {
+        toast.error(`Rewrite length mismatch: got ${finalCount} words, required ${min}-${max}`);
+        return;
+      }
+
+      setEditForm((prev) => ({ ...prev, content: finalContent }));
+      toast.success(`Content rewritten (${finalCount} words)`);
     } catch (err: unknown) {
       const errorMsg =
         (err as { data?: { detail?: string } })?.data?.detail ||
