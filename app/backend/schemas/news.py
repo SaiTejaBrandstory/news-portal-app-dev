@@ -54,7 +54,10 @@ class ScrapeRequest(BaseModel):
     urls: List[str]
     category: str = "general"
     rewrite_style: str = "professional"
-    words_length: str = "medium"  # short (~150 words), medium (~300 words), long (~500 words)
+    # Supports legacy: short/medium/long
+    # and new content formats:
+    # breaking_alert, news_brief, standard_news, detailed_report, explainer_analysis
+    words_length: str = "standard_news"
     auto_publish: bool = False
 
 

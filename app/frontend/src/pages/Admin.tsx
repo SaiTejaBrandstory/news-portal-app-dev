@@ -142,50 +142,6 @@ function getFormatMeta(format: ContentFormatKey) {
   return CONTENT_FORMAT_OPTIONS.find((item) => item.value === format) || CONTENT_FORMAT_OPTIONS[2];
 }
 
-function mapContentFormatToWordsLength(format: ContentFormatKey): string {
-  // Pass explicit format key to backend so word-range prompts stay precise.
-  return format;
-}
-
-function getContentFormatWordRange(format: ContentFormatKey): { min: number; max: number } {
-  switch (format) {
-    case 'breaking_alert':
-      return { min: 50, max: 120 };
-    case 'news_brief':
-      return { min: 120, max: 250 };
-    case 'standard_news':
-      return { min: 300, max: 600 };
-    case 'detailed_report':
-      return { min: 600, max: 1000 };
-    case 'explainer_analysis':
-      return { min: 800, max: 1500 };
-    default:
-      return { min: 300, max: 600 };
-  }
-}
-
-function countWordsFromHtmlOrText(input: string): number {
-  const plain = input
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (!plain) return 0;
-  return plain.split(/\s+/).filter(Boolean).length;
-}
-
-function normalizeMarkdownLikeContent(input: string): string {
-  if (!input) return '';
-  return input
-    .replace(/```[\s\S]*?```/g, (m) => m.replace(/```/g, ''))
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/\*\*(.*?)\*\*/g, '$1')
-    .replace(/\*(.*?)\*/g, '$1')
-    .replace(/__(.*?)__/g, '$1')
-    .replace(/`([^`]+)`/g, '$1')
-    .trim();
-}
-
 /** Parse comma-separated tags string into array */
 function parseTags(tags: string | null | undefined): string[] {
   if (!tags) return [];
@@ -826,7 +782,6 @@ export default function Admin() {
     setRewritingContent(true);
     try {
       const formatMeta = getFormatMeta(editRewriteFormat);
-      const { min, max } = getContentFormatWordRange(editRewriteFormat);
       const response = await client.apiCall.invoke({
         url: '/api/v1/aihub/gentxt',
         method: 'POST',
@@ -839,7 +794,7 @@ export default function Admin() {
             {
               role: 'system',
               content:
-                `You are a professional news editor. Rewrite article content for clarity, engagement, and correctness. Target format: ${formatMeta.label}. STRICT word count: ${min}-${max} words. Structure: ${formatMeta.structure}. Return only clean HTML body content (no markdown code fences, no explanations). Keep facts unchanged and preserve key details.`,
+                `You are a professional news editor. Rewrite article content for clarity, engagement, and correctness. Target format: ${formatMeta.label}. Target length: ${formatMeta.words} words. Structure: ${formatMeta.structure}. Return only clean HTML body content (no markdown code fences, no explanations). Keep facts unchanged and preserve key details.`,
             },
             {
               role: 'user',
@@ -855,49 +810,9 @@ export default function Admin() {
         toast.error('Rewrite failed: empty response');
         return;
       }
-      let finalContent = normalizeMarkdownLikeContent(rewritten);
-      let finalCount = countWordsFromHtmlOrText(finalContent);
 
-      for (let attempt = 0; attempt < 3 && (finalCount < min || finalCount > max); attempt++) {
-        const shortage = Math.max(0, min - finalCount);
-        const excess = Math.max(0, finalCount - max);
-        const retryResponse = await client.apiCall.invoke({
-          url: '/api/v1/aihub/gentxt',
-          method: 'POST',
-          data: {
-            model: 'deepseek-v3.2',
-            stream: false,
-            temperature: 0.35,
-            max_tokens: 4096,
-            messages: [
-              {
-                role: 'system',
-                content:
-                  finalCount < min
-                    ? `Expand the provided article to STRICTLY ${min}-${max} words by adding concrete, relevant details. You are currently short by about ${shortage} words. Preserve facts and names. Return HTML body content only.`
-                    : `Condense the provided article to STRICTLY ${min}-${max} words by removing repetition while preserving all facts and names. You are currently over by about ${excess} words. Return HTML body content only.`,
-              },
-              {
-                role: 'user',
-                content: finalContent,
-              },
-            ],
-          },
-        });
-        const retryResult = invokeData<{ content?: string }>(retryResponse);
-        const retried = retryResult?.content?.trim();
-        if (retried) {
-          finalContent = normalizeMarkdownLikeContent(retried);
-          finalCount = countWordsFromHtmlOrText(finalContent);
-        }
-      }
-
-      setEditForm((prev) => ({ ...prev, content: finalContent }));
-      if (finalCount < min || finalCount > max) {
-        toast.warning(`Rewritten and updated (${finalCount} words). Target was ${min}-${max}.`);
-      } else {
-        toast.success(`Content rewritten (${finalCount} words)`);
-      }
+      setEditForm((prev) => ({ ...prev, content: rewritten }));
+      toast.success('Content rewritten');
     } catch (err: unknown) {
       const errorMsg =
         (err as { data?: { detail?: string } })?.data?.detail ||
@@ -985,7 +900,7 @@ export default function Admin() {
           urls,
           category: scrapeCategory,
           rewrite_style: scrapeStyle,
-          words_length: mapContentFormatToWordsLength(scrapeContentFormat),
+          words_length: scrapeContentFormat,
           auto_publish: scrapeAutoPublish,
         },
       });

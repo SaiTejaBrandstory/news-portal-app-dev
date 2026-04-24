@@ -60,75 +60,6 @@ def generate_slug(title: str) -> str:
     return f"{slug}-{timestamp}"
 
 
-def _word_count(text: str) -> int:
-    plain = re.sub(r"<[^>]*>", " ", text or "")
-    plain = re.sub(r"\s+", " ", plain).strip()
-    if not plain:
-        return 0
-    return len([w for w in plain.split(" ") if w])
-
-
-def _strip_markdown_artifacts(text: str) -> str:
-    if not text:
-        return ""
-    cleaned = re.sub(r"```[\s\S]*?```", lambda m: m.group(0).replace("```", ""), text)
-    cleaned = re.sub(r"^#{1,6}\s+", "", cleaned, flags=re.MULTILINE)
-    cleaned = re.sub(r"\*\*(.*?)\*\*", r"\1", cleaned)
-    cleaned = re.sub(r"\*(.*?)\*", r"\1", cleaned)
-    cleaned = re.sub(r"__(.*?)__", r"\1", cleaned)
-    cleaned = re.sub(r"`([^`]+)`", r"\1", cleaned)
-    return cleaned.strip()
-
-
-async def _enforce_word_range_with_ai(
-    ai_service: AIHubService,
-    article: str,
-    min_words: int,
-    max_words: int,
-    model: str = "deepseek-v3.2",
-) -> str:
-    """Try multiple passes to bring article within target word range."""
-    current = _strip_markdown_artifacts(article)
-    current_count = _word_count(current)
-
-    for _ in range(3):
-        if min_words <= current_count <= max_words:
-            break
-
-        if current_count < min_words:
-            delta = min_words - current_count
-            instruction = (
-                f"Expand this article to STRICTLY {min_words}-{max_words} words. "
-                f"You are currently short by about {delta} words. "
-                "Add concrete, relevant context while preserving facts, names, dates, and claims. "
-                "Return only article text (no markdown)."
-            )
-        else:
-            delta = current_count - max_words
-            instruction = (
-                f"Condense this article to STRICTLY {min_words}-{max_words} words. "
-                f"You are currently over by about {delta} words. "
-                "Remove repetition while preserving facts, names, dates, and claims. "
-                "Return only article text (no markdown)."
-            )
-
-        adjust_request = GenTxtRequest(
-            messages=[
-                ChatMessage(role="system", content="You are a precise news editor. Follow word-count constraints exactly."),
-                ChatMessage(role="user", content=f"{instruction}\n\nARTICLE:\n{current}"),
-            ],
-            model=model,
-        )
-        adjust_response = await ai_service.gentxt(adjust_request)
-        adjusted = (adjust_response.content or "").strip()
-        if not adjusted:
-            break
-        current = _strip_markdown_artifacts(adjusted)
-        current_count = _word_count(current)
-
-    return current
-
-
 def _parse_apify_items(items: list) -> List[Dict[str, Any]]:
     """Parse Apify Google News Scraper response items into a normalized format.
 
@@ -310,26 +241,18 @@ class NewsService:
             "formal": "Rewrite in a formal, academic tone with precise language and detailed analysis.",
         }
 
+        # Supports both legacy values (short/medium/long) and new UI format keys.
         length_prompts = {
-            "short": "Keep the article concise, approximately 100-150 words (1-2 short paragraphs).",
-            "medium": "Write a moderately detailed article, approximately 250-350 words (3-4 paragraphs).",
-            "long": "Write a comprehensive, in-depth article, approximately 500-700 words (5-7 paragraphs with detailed analysis).",
-            "breaking_alert": "Strictly 50-120 words; 1-2 short paragraphs.",
-            "news_brief": "Strictly 120-250 words; 2-3 short paragraphs.",
-            "standard_news": "Strictly 300-600 words; 3-5 medium paragraphs.",
-            "detailed_report": "Strictly 600-1000 words; 5-8 paragraphs with context.",
-            "explainer_analysis": "Strictly 800-1500 words; sectioned with subheadings.",
-        }
-
-        length_ranges = {
-            "short": (100, 150),
-            "medium": (250, 350),
-            "long": (500, 700),
-            "breaking_alert": (50, 120),
-            "news_brief": (120, 250),
-            "standard_news": (300, 600),
-            "detailed_report": (600, 1000),
-            "explainer_analysis": (800, 1500),
+            # Legacy buckets
+            "short": "Target 120-250 words, usually 2-3 short paragraphs.",
+            "medium": "Target 300-600 words, usually 3-5 medium paragraphs.",
+            "long": "Target 800-1500 words, sectioned analysis with subheadings.",
+            # New content-format keys from admin UI
+            "breaking_alert": "Target 50-120 words with 1-2 very short paragraphs for urgent updates.",
+            "news_brief": "Target 120-250 words with 2-3 short paragraphs.",
+            "standard_news": "Target 300-600 words with 3-5 medium paragraphs.",
+            "detailed_report": "Target 600-1000 words with 5-8 paragraphs covering facts, data, and context.",
+            "explainer_analysis": "Target 800-1500 words with structured sections/subheadings and deeper analysis.",
         }
 
         style_instruction = style_prompts.get(style, style_prompts["professional"])
@@ -338,6 +261,7 @@ class NewsService:
         prompt = f"""You are a professional news editor. {style_instruction}
 
 {length_instruction}
+Important: Follow the target range strictly and avoid producing shorter output unless the source text is too limited to support it.
 
 Rewrite the following news article. Provide:
 1. A compelling, SEO-friendly headline (max 80 characters)
@@ -347,8 +271,6 @@ Rewrite the following news article. Provide:
    - No vague filler. Every point must contain a specific fact, number, name, or outcome.
    - Format: one point per line, each starting with "• "
 3. The full rewritten article (well-structured with clear flow)
-4. Do NOT use Markdown syntax anywhere:
-   - No **bold**, no # headings, no backticks/code fences.
 
 Original Title: {title}
 Original Content: {content}
@@ -391,21 +313,6 @@ ARTICLE:
                         summary = parts.strip()
                 else:
                     headline = parts.strip()[:80]
-
-            headline = _strip_markdown_artifacts(headline)
-            summary = _strip_markdown_artifacts(summary)
-            article = _strip_markdown_artifacts(article)
-
-            min_words, max_words = length_ranges.get(words_length, length_ranges["medium"])
-            article_words = _word_count(article)
-            if article_words < min_words or article_words > max_words:
-                article = await _enforce_word_range_with_ai(
-                    ai_service=self.ai_service,
-                    article=article,
-                    min_words=min_words,
-                    max_words=max_words,
-                    model="deepseek-v3.2",
-                )
 
             return {
                 "title": headline[:200],
